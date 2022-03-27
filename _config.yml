@@ -1,8 +1,8 @@
-title: Hamilton
+title: Lab of Pharmacognosy
 description: A minimal and beautiful Jekyll theme best for writing and note-taking.
-author: Shangzhi Huang
+author: Hyunwoo Kim
 avatar: /logo.png
-email: ngzhio@gmail.com
+email: hwkim8906@dongguk.edu
 
 plugins:
   - jekyll-seo-tag
@@ -29,15 +29,15 @@ exclude:
 
 # Jekyll SEO Tag (Optional)
 # =========================
-twitter:
-  username: ngzhio
-  card: summary
-logo: logo.png
-social:
-  name: Shangzhi Huang
-  links:
-    - https://twitter.com/ngzhio
-    - https://www.facebook.com/ngzhio
-    - https://github.com/ngzhio
-google_site_verification: u4WXQl0Eu66rsQo2kRdCNx
-lang: en
+#twitter:
+#  username: ngzhio
+#  card: summary
+#logo: logo.png
+#social:
+#  name: Shangzhi Huang
+#  links:
+#    - https://twitter.com/ngzhio
+#    - https://www.facebook.com/ngzhio
+#    - https://github.com/ngzhio
+#google_site_verification: u4WXQl0Eu66rsQo2kRdCNx
+#lang: en
