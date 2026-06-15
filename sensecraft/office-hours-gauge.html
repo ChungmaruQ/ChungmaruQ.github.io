@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta http-equiv="refresh" content="3600">
+    <meta http-equiv="refresh" content="900">
     <title>Office Hours Door Display</title>
     <style>
       :root {
@@ -91,7 +91,6 @@
         margin-top: 7px;
         display: flex;
         align-items: center;
-        gap: 12px;
         max-width: 430px;
       }
 
@@ -108,13 +107,14 @@
 
       .battery-gauge {
         display: none;
-        flex: 0 0 auto;
-        position: relative;
+        position: absolute;
+        left: 184px;
+        bottom: 18px;
         align-items: center;
-        width: 74px;
-        height: 30px;
+        width: 48px;
+        height: 20px;
         border: 2px solid #1f2d30;
-        border-radius: 6px;
+        border-radius: 5px;
         background: #fffdf8;
         color: #1f2d30;
       }
@@ -123,7 +123,7 @@
         content: "";
         position: absolute;
         right: -6px;
-        top: 9px;
+        top: 5px;
         width: 4px;
         height: 8px;
         border-radius: 0 3px 3px 0;
@@ -136,18 +136,12 @@
         top: 3px;
         bottom: 3px;
         width: 0%;
-        border-radius: 3px;
+        border-radius: 2px;
         background: var(--battery-color, var(--leaf));
       }
 
       .battery-text {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        text-align: center;
-        font-size: 15px;
-        font-weight: 950;
-        line-height: 26px;
+        display: none;
       }
 
       .date-block {
@@ -228,6 +222,57 @@
         font-weight: 800;
         line-height: 1.1;
         white-space: nowrap;
+      }
+
+      .week-strip {
+        display: none;
+        margin-top: 18px;
+        width: 372px;
+      }
+
+      .week-strip-label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .week-days {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+      }
+
+      .week-day {
+        display: grid;
+        place-items: center;
+        height: 44px;
+        border: 3px solid #1f2d30;
+        border-radius: 8px;
+        background: var(--panel);
+        color: #1f2d30;
+        text-align: center;
+        box-shadow: 4px 4px 0 #d8dfda;
+      }
+
+      .week-day .day {
+        display: block;
+        font-size: 19px;
+        font-weight: 950;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .week-day .mark {
+        display: none;
+      }
+
+      .week-day.away {
+        background: var(--accent);
+        color: #ffffff;
+        box-shadow: 4px 4px 0 var(--accent-soft);
       }
 
       .next {
@@ -378,10 +423,6 @@
           <div class="label">Office Hours</div>
           <div class="name-line">
             <div class="name" data-field="display_name">Prof. Hyunwoo Kim</div>
-            <div class="battery-gauge" aria-label="Battery level">
-              <div class="battery-fill" aria-hidden="true"></div>
-              <div class="battery-text" data-field="battery_level"></div>
-            </div>
           </div>
         </div>
         <div class="date-block">
@@ -396,6 +437,10 @@
         <div class="status-label" data-field="status_label">Busy</div>
         <div class="headline" data-field="headline">In a Meeting</div>
         <div class="detail" data-field="detail">Busy right now.</div>
+        <div class="week-strip" aria-label="Away days this week">
+          <div class="week-strip-label">Away Days</div>
+          <div class="week-days"></div>
+        </div>
       </section>
 
       <section class="next">
@@ -407,6 +452,10 @@
         <div class="hours">
           <div class="label">Office Hours</div>
           <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-17:00</div>
+          <div class="battery-gauge" aria-label="Battery level">
+            <div class="battery-fill" aria-hidden="true"></div>
+            <div class="battery-text" data-field="battery_level"></div>
+          </div>
         </div>
         <div class="agenda-label label">Up Next</div>
         <div class="agenda">
@@ -435,6 +484,7 @@
         next_available: "16:16",
         todays_hours: "09:30-12:00 / 13:00-17:00",
         battery_level: "",
+        away_days: [],
         up_next_1_time: "15:31-16:16",
         up_next_1_title: "Busy",
         up_next_2_time: "17:21-18:21",
@@ -443,7 +493,7 @@
       };
 
       const params = new URLSearchParams(window.location.search);
-      const refreshMs = 60 * 60 * 1000;
+      const refreshMs = 15 * 60 * 1000;
       const dataUrl =
         params.get("data") ||
         window.OFFICE_HOURS_DATA_URL ||
@@ -470,6 +520,7 @@
 
         updateAgendaVisibility();
         updateBatteryVisibility();
+        updateWeekStrip(status);
         fitDynamicText();
 
         const state = status.state || "";
@@ -501,6 +552,61 @@
         fitTextToWidth(".next-time", 31, 23);
         fitTextToWidth(".hours-value", 25, 18);
         fitTextToWidth(".agenda-title", 20, 14);
+      }
+
+      function updateWeekStrip(status) {
+        const strip = document.querySelector(".week-strip");
+        const daysEl = document.querySelector(".week-days");
+        if (!strip || !daysEl) return;
+
+        const statesWithStrip = ["away", "leave", "offsite", "off_hours", "closed"];
+        const hasAwayDays = Object.prototype.hasOwnProperty.call(status, "away_days");
+        const shouldShow = hasAwayDays && statesWithStrip.includes(status.state || "");
+        if (!shouldShow) {
+          strip.style.display = "none";
+          daysEl.innerHTML = "";
+          return;
+        }
+
+        const awayDays = normalizeAwayDays(status.away_days);
+        const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+        daysEl.innerHTML = dayLabels.map((day) => {
+          const isAway = awayDays.includes(day.toLowerCase());
+          return `
+            <div class="week-day${isAway ? " away" : ""}" aria-label="${day} ${isAway ? "away" : "in office"}">
+              <span class="day">${day}</span>
+            </div>
+          `;
+        }).join("");
+        strip.style.display = "block";
+      }
+
+      function normalizeAwayDays(value) {
+        if (Array.isArray(value)) {
+          return value.map(normalizeDayLabel).filter(Boolean);
+        }
+        return String(value || "")
+          .split(",")
+          .map(normalizeDayLabel)
+          .filter(Boolean);
+      }
+
+      function normalizeDayLabel(value) {
+        const text = String(value || "").trim().toLowerCase();
+        const aliases = {
+          m: "mon",
+          monday: "mon",
+          mon: "mon",
+          tuesday: "tue",
+          tue: "tue",
+          wednesday: "wed",
+          wed: "wed",
+          thursday: "thu",
+          thu: "thu",
+          friday: "fri",
+          fri: "fri"
+        };
+        return aliases[text] || "";
       }
 
       function fitTextToWidth(selector, maxPx, minPx) {
@@ -547,6 +653,7 @@
         const numeric = Number(rawValue.replace("%", ""));
         const percent = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
         gauge.style.display = "flex";
+        gauge.setAttribute("aria-label", `Battery ${percent}%`);
         fill.style.width = `${percent}%`;
         fill.style.background = batteryColor(percent);
       }
