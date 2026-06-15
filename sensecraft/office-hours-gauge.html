@@ -273,24 +273,30 @@
         display: none;
       }
 
+      .week-day .slash {
+        display: none;
+      }
+
       .week-day.away {
         background: var(--accent);
         color: #ffffff;
         box-shadow: 4px 4px 0 var(--accent-soft);
       }
 
-      .week-day.away::before {
-        content: "";
+      .week-day.away .slash {
+        display: block;
         position: absolute;
-        z-index: 1;
-        left: -10px;
-        top: 18px;
-        width: 96px;
-        height: 8px;
+        z-index: 3;
+        left: -12px;
+        top: 17px;
+        width: 98px;
+        height: 10px;
         border-radius: 999px;
-        background: #ffffff;
-        box-shadow: 0 0 0 2px rgba(31, 45, 48, 0.28);
-        transform: rotate(-32deg);
+        border: 2px solid #1f2d30;
+        background: #fffdf8;
+        box-shadow: 2px 2px 0 rgba(31, 45, 48, 0.22);
+        transform: rotate(-31deg);
+        pointer-events: none;
       }
 
       .next {
@@ -592,6 +598,7 @@
           const isAway = awayDays.includes(day.toLowerCase());
           return `
             <div class="week-day${isAway ? " away" : ""}" aria-label="${day} ${isAway ? "away" : "in office"}">
+              ${isAway ? '<span class="slash" aria-hidden="true"></span>' : ''}
               <span class="day">${day}</span>
             </div>
           `;
