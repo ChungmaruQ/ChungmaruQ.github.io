@@ -248,6 +248,8 @@
       .week-day {
         display: grid;
         place-items: center;
+        position: relative;
+        overflow: hidden;
         height: 44px;
         border: 3px solid #1f2d30;
         border-radius: 8px;
@@ -259,6 +261,8 @@
 
       .week-day .day {
         display: block;
+        position: relative;
+        z-index: 2;
         font-size: 19px;
         font-weight: 950;
         line-height: 1;
@@ -273,6 +277,20 @@
         background: var(--accent);
         color: #ffffff;
         box-shadow: 4px 4px 0 var(--accent-soft);
+      }
+
+      .week-day.away::before {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        left: -10px;
+        top: 18px;
+        width: 96px;
+        height: 8px;
+        border-radius: 999px;
+        background: #ffffff;
+        box-shadow: 0 0 0 2px rgba(31, 45, 48, 0.28);
+        transform: rotate(-32deg);
       }
 
       .next {
