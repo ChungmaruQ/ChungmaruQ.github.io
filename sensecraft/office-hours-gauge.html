@@ -405,7 +405,7 @@
 
       <section class="bottom">
         <div class="hours">
-          <div class="label">Today's Hours</div>
+          <div class="label">Office Hours</div>
           <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-17:00</div>
         </div>
         <div class="agenda-label label">Up Next</div>
@@ -457,7 +457,7 @@
       }
 
       function withCacheBust(url) {
-        const nextUrl = new URL(url);
+        const nextUrl = new URL(url, window.location.href);
         nextUrl.searchParams.set("_", Date.now().toString());
         return nextUrl.toString();
       }
@@ -465,13 +465,12 @@
       function applyStatus(status) {
         document.querySelectorAll("[data-field]").forEach((element) => {
           const field = element.getAttribute("data-field");
-          if (Object.prototype.hasOwnProperty.call(status, field)) {
-            element.textContent = status[field] ?? "";
-          }
+          element.textContent = status[field] ?? "";
         });
 
         updateAgendaVisibility();
         updateBatteryVisibility();
+        fitDynamicText();
 
         const state = status.state || "";
         const root = document.documentElement;
@@ -490,7 +489,31 @@
         } else if (state === "off_hours" || state === "offsite" || state === "closed") {
           root.style.setProperty("--accent", "#606968");
           root.style.setProperty("--accent-soft", "#e8e4dd");
+        } else {
+          root.style.setProperty("--accent", "#e07a2f");
+          root.style.setProperty("--accent-soft", "#fff0df");
         }
+      }
+
+      function fitDynamicText() {
+        fitTextToWidth(".headline", 54, 36);
+        fitTextToWidth(".detail", 21, 16);
+        fitTextToWidth(".next-time", 31, 23);
+        fitTextToWidth(".hours-value", 25, 18);
+        fitTextToWidth(".agenda-title", 20, 14);
+      }
+
+      function fitTextToWidth(selector, maxPx, minPx) {
+        document.querySelectorAll(selector).forEach((element) => {
+          element.style.fontSize = `${maxPx}px`;
+          if (element.offsetParent === null) return;
+
+          let size = maxPx;
+          while (size > minPx && element.scrollWidth > element.clientWidth) {
+            size -= 1;
+            element.style.fontSize = `${size}px`;
+          }
+        });
       }
 
       function updateAgendaVisibility() {
