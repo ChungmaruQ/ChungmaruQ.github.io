@@ -36,8 +36,10 @@
         overflow: hidden;
         background: var(--bg);
         color: var(--ink);
-        font-family: Inter, Arial, Helvetica, sans-serif;
-        -webkit-font-smoothing: antialiased;
+        font-family: Arial, Helvetica, sans-serif;
+        font-synthesis: none;
+        -webkit-font-smoothing: none;
+        text-rendering: optimizeSpeed;
       }
 
       .canvas {
@@ -53,7 +55,7 @@
       .label {
         color: var(--muted);
         font-size: 14px;
-        font-weight: 800;
+        font-weight: 700;
         line-height: 1;
         text-transform: uppercase;
       }
@@ -101,7 +103,7 @@
         overflow: hidden;
         color: var(--ink);
         font-size: 30px;
-        font-weight: 900;
+        font-weight: 700;
         line-height: 1;
         white-space: nowrap;
       }
@@ -157,7 +159,7 @@
         margin-top: 6px;
         color: var(--ink);
         font-size: 26px;
-        font-weight: 900;
+        font-weight: 700;
         line-height: 1;
       }
 
@@ -208,8 +210,8 @@
         border-radius: 5px;
         background: var(--panel);
         color: var(--accent);
-        font-size: 17px;
-        font-weight: 900;
+        font-size: 16px;
+        font-weight: 700;
         line-height: 1;
         text-transform: uppercase;
       }
@@ -218,8 +220,8 @@
         margin-top: 14px;
         overflow: hidden;
         color: var(--ink);
-        font-size: 54px;
-        font-weight: 950;
+        font-size: 52px;
+        font-weight: 800;
         line-height: 0.98;
         white-space: nowrap;
       }
@@ -228,8 +230,8 @@
         margin-top: 12px;
         overflow: hidden;
         color: var(--muted);
-        font-size: 21px;
-        font-weight: 800;
+        font-size: 20px;
+        font-weight: 700;
         line-height: 1.1;
         white-space: nowrap;
       }
@@ -243,8 +245,8 @@
       .week-strip-label {
         margin-bottom: 8px;
         color: var(--muted);
-        font-size: 13px;
-        font-weight: 900;
+        font-size: 12px;
+        font-weight: 700;
         line-height: 1;
         text-transform: uppercase;
       }
@@ -273,8 +275,8 @@
         display: block;
         position: relative;
         z-index: 2;
-        font-size: 19px;
-        font-weight: 950;
+        font-size: 18px;
+        font-weight: 700;
         line-height: 1;
         text-transform: uppercase;
       }
@@ -336,8 +338,8 @@
         top: 55px;
         width: 156px;
         color: var(--ink);
-        font-size: 31px;
-        font-weight: 950;
+        font-size: 30px;
+        font-weight: 800;
         line-height: 1.02;
         white-space: normal;
       }
@@ -387,8 +389,8 @@
       .hours-value {
         margin-top: 9px;
         color: var(--ink);
-        font-size: 25px;
-        font-weight: 950;
+        font-size: 24px;
+        font-weight: 800;
         line-height: 1.2;
       }
 
@@ -427,8 +429,8 @@
       .agenda-time {
         overflow: hidden;
         color: var(--muted);
-        font-size: 15px;
-        font-weight: 900;
+        font-size: 14px;
+        font-weight: 700;
         line-height: 1.1;
         white-space: nowrap;
       }
@@ -438,7 +440,7 @@
         overflow: hidden;
         color: var(--ink);
         font-size: 20px;
-        font-weight: 950;
+        font-weight: 800;
         line-height: 1.1;
         white-space: nowrap;
       }
@@ -449,7 +451,7 @@
         bottom: 7px;
         color: #657174;
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 600;
       }
     </style>
   </head>
@@ -585,10 +587,10 @@
       }
 
       function fitDynamicText() {
-        fitTextToWidth(".headline", 54, 36);
-        fitTextToWidth(".detail", 21, 16);
-        fitTextToWidth(".next-time", 31, 23);
-        fitTextToWidth(".hours-value", 25, 18);
+        fitTextToWidth(".headline", 52, 36);
+        fitTextToWidth(".detail", 20, 16);
+        fitTextToWidth(".next-time", 30, 22);
+        fitTextToWidth(".hours-value", 24, 18);
         fitTextToWidth(".agenda-title", 20, 14);
       }
 
