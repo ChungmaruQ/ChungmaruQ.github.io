@@ -555,6 +555,7 @@
           element.textContent = status[field] ?? "";
         });
 
+        updateNextCard(status);
         updateAgendaVisibility();
         updateBatteryVisibility();
         updateWeekStrip(status);
@@ -589,6 +590,21 @@
         fitTextToWidth(".next-time", 31, 23);
         fitTextToWidth(".hours-value", 25, 18);
         fitTextToWidth(".agenda-title", 20, 14);
+      }
+
+      function updateNextCard(status) {
+        const label = document.querySelector(".next .label");
+        const value = document.querySelector("[data-field='next_available']");
+        if (!label || !value) return;
+
+        if (status.state === "available") {
+          label.textContent = "Available Until";
+          value.textContent = status.current_until || "Now";
+          return;
+        }
+
+        label.textContent = "Next Available";
+        value.textContent = status.next_available || "";
       }
 
       function updateWeekStrip(status) {
