@@ -6,7 +6,6 @@
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta http-equiv="refresh" content="900">
     <title>Office Hours Door Display</title>
     <style>
       :root {
@@ -490,19 +489,19 @@
         </div>
         <div class="date-block">
           <div class="label">Today</div>
-          <div class="date" data-field="date">Mon, Jun 15</div>
+          <div class="date" data-field="date"></div>
         </div>
       </section>
 
       <div class="status-dot" aria-hidden="true"></div>
 
       <section class="status">
-        <div class="status-label" data-field="status_label">Busy</div>
+        <div class="status-label" data-field="status_label">Loading</div>
         <div class="headline-shell">
           <canvas class="headline-bitmap" width="390" height="62" aria-hidden="true"></canvas>
-          <div class="headline" data-field="headline">In a Meeting</div>
+          <div class="headline" data-field="headline">Checking</div>
         </div>
-        <div class="detail" data-field="detail">Busy right now.</div>
+        <div class="detail" data-field="detail">Updating status.</div>
         <div class="week-strip" aria-label="Away days this week">
           <div class="week-strip-label">Away This Week</div>
           <div class="week-days"></div>
@@ -511,7 +510,7 @@
 
       <section class="next">
         <div class="label">Next Available</div>
-        <div class="next-time" data-field="next_available">16:16</div>
+        <div class="next-time" data-field="next_available"></div>
       </section>
 
       <section class="bottom">
@@ -526,36 +525,36 @@
         <div class="agenda-label label">Up Next</div>
         <div class="agenda">
           <div class="agenda-item">
-            <div class="agenda-time" data-field="up_next_1_time">15:31-16:16</div>
-            <div class="agenda-title" data-field="up_next_1_title">Busy</div>
+            <div class="agenda-time" data-field="up_next_1_time"></div>
+            <div class="agenda-title" data-field="up_next_1_title"></div>
           </div>
           <div class="agenda-item second">
-            <div class="agenda-time" data-field="up_next_2_time">17:21-18:21</div>
-            <div class="agenda-title" data-field="up_next_2_title">Office Hours</div>
+            <div class="agenda-time" data-field="up_next_2_time"></div>
+            <div class="agenda-title" data-field="up_next_2_title"></div>
           </div>
         </div>
       </section>
 
-      <div class="updated">Updated <span data-field="updated_at">Jun 15, 15:51</span></div>
+      <div class="updated">Updated <span data-field="updated_at"></span></div>
     </main>
 
     <script>
       const fallbackStatus = {
         display_name: "Prof. Hyunwoo Kim",
-        date: "Mon, Jun 15",
-        state: "busy",
-        status_label: "Busy",
-        headline: "In a Meeting",
-        detail: "Busy right now.",
-        next_available: "16:16",
+        date: "",
+        state: "setup",
+        status_label: "Loading",
+        headline: "Checking",
+        detail: "Updating status.",
+        next_available: "",
         todays_hours: "09:30-12:00 / 13:00-17:00",
         battery_level: "",
         away_days: [],
-        up_next_1_time: "15:31-16:16",
-        up_next_1_title: "Busy",
-        up_next_2_time: "17:21-18:21",
-        up_next_2_title: "Office Hours",
-        updated_at: "Jun 15, 15:51"
+        up_next_1_time: "",
+        up_next_1_title: "",
+        up_next_2_time: "",
+        up_next_2_title: "",
+        updated_at: ""
       };
 
       const params = new URLSearchParams(window.location.search);
@@ -564,6 +563,7 @@
         params.get("data") ||
         window.OFFICE_HOURS_DATA_URL ||
         "https://raw.githubusercontent.com/ChungmaruQ/desktop-tutorial/master/sensecraft.json";
+      let hasLoadedStatus = false;
 
       function fitCanvasToViewport() {
         const width = window.innerWidth || 800;
@@ -793,7 +793,7 @@
 
       async function loadStatus() {
         if (!dataUrl) {
-          applyStatus(fallbackStatus);
+          if (!hasLoadedStatus) applyStatus(fallbackStatus);
           return;
         }
 
@@ -801,8 +801,11 @@
           const response = await fetch(withCacheBust(dataUrl), { cache: "no-store" });
           if (!response.ok) throw new Error("Status fetch failed");
           applyStatus(await response.json());
+          hasLoadedStatus = true;
         } catch (error) {
-          applyStatus(fallbackStatus);
+          if (!hasLoadedStatus) {
+            applyStatus(fallbackStatus);
+          }
         }
       }
 
