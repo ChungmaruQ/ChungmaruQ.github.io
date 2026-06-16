@@ -9,19 +9,19 @@
       :root {
         --bg: #ffffff;
         --panel: #ffffff;
-        --ink: #111111;
-        --muted: #454545;
-        --line: #111111;
-        --accent: #e07a2f;
+        --ink: #000000;
+        --muted: #000000;
+        --line: #000000;
+        --accent: #000000;
         --accent-soft: #ffffff;
-        --accent-ink: #111111;
-        --office: #00875a;
-        --away: #c53131;
-        --focus: #5f45a8;
-        --remote: #006f9f;
-        --sun: #f0b400;
-        --sky: #0089c7;
-        --leaf: #00875a;
+        --accent-ink: #000000;
+        --office: #008000;
+        --away: #cc0000;
+        --focus: #0033cc;
+        --remote: #0066cc;
+        --sun: #cc9900;
+        --sky: #0066cc;
+        --leaf: #008000;
       }
 
       * {
@@ -65,7 +65,7 @@
         inset: 0 0 auto 0;
         height: 78px;
         background: var(--panel);
-        border-bottom: 3px solid var(--ink);
+        border-bottom: 4px solid var(--ink);
       }
 
       .top::before {
@@ -171,7 +171,7 @@
         place-items: center;
         width: 106px;
         height: 106px;
-        border: 7px solid var(--ink);
+        border: 8px solid var(--ink);
         border-radius: 50%;
         background: var(--panel);
         box-shadow: none;
@@ -180,16 +180,16 @@
       .status-dot::before {
         content: "";
         position: absolute;
-        inset: 15px;
-        border: 7px solid var(--accent);
+        inset: 16px;
+        border: 6px solid var(--accent);
         border-radius: 50%;
       }
 
       .status-dot::after {
         content: "";
         position: relative;
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border: 0;
         border-radius: 50%;
         background: var(--accent);
@@ -206,10 +206,10 @@
       .status-label {
         display: inline-block;
         padding: 7px 11px;
-        border: 3px solid var(--accent);
-        border-radius: 5px;
+        border: 4px solid var(--accent);
+        border-radius: 4px;
         background: var(--panel);
-        color: var(--accent);
+        color: var(--ink);
         font-size: 16px;
         font-weight: 700;
         line-height: 1;
@@ -263,8 +263,8 @@
         position: relative;
         overflow: hidden;
         height: 44px;
-        border: 3px solid var(--ink);
-        border-radius: 6px;
+        border: 4px solid var(--ink);
+        border-radius: 4px;
         background: var(--panel);
         color: var(--ink);
         text-align: center;
@@ -300,11 +300,11 @@
         display: block;
         position: absolute;
         z-index: 1;
-        left: -9px;
+        left: -8px;
         top: 19px;
-        width: 91px;
-        height: 7px;
-        border-radius: 999px;
+        width: 88px;
+        height: 8px;
+        border-radius: 0;
         border: 0;
         background: var(--ink);
         box-shadow: none;
@@ -318,8 +318,8 @@
         top: 108px;
         width: 182px;
         height: 218px;
-        border: 3px solid var(--ink);
-        border-radius: 6px;
+        border: 4px solid var(--ink);
+        border-radius: 4px;
         background: var(--panel);
         box-shadow: none;
       }
@@ -350,7 +350,7 @@
         bottom: 0;
         width: 800px;
         height: 124px;
-        border-top: 3px solid var(--ink);
+        border-top: 4px solid var(--ink);
         background: var(--panel);
       }
 
@@ -379,7 +379,7 @@
         padding: 14px 22px 17px;
         border-top: 6px solid var(--office);
         background: var(--panel);
-        border-right: 3px solid var(--ink);
+        border-right: 4px solid var(--ink);
       }
 
       .hours .label {
@@ -406,7 +406,7 @@
         position: absolute;
         left: 278px;
         bottom: 93px;
-        color: #1f6c86;
+        color: var(--ink);
       }
 
       .agenda-item {
@@ -417,13 +417,14 @@
         padding: 10px 12px 10px 15px;
         border: 2px solid var(--ink);
         border-left: 8px solid var(--accent);
-        border-radius: 6px;
+        border-radius: 4px;
         background: var(--panel);
       }
 
       .agenda-item.second {
         left: 252px;
-        border-color: var(--sky);
+        border-color: var(--ink);
+        border-left-color: var(--sky);
       }
 
       .agenda-time {
@@ -449,7 +450,7 @@
         position: absolute;
         right: 22px;
         bottom: 7px;
-        color: #657174;
+        color: var(--ink);
         font-size: 10px;
         font-weight: 600;
       }
@@ -566,25 +567,25 @@
         const state = status.state || "";
         const root = document.documentElement;
         if (state === "available") {
-          root.style.setProperty("--accent", "#00875a");
+          root.style.setProperty("--accent", "#008000");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "away" || state === "leave") {
-          root.style.setProperty("--accent", "#c53131");
+          root.style.setProperty("--accent", "#cc0000");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "focus") {
-          root.style.setProperty("--accent", "#5f45a8");
+          root.style.setProperty("--accent", "#0033cc");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "lunch") {
-          root.style.setProperty("--accent", "#b77700");
+          root.style.setProperty("--accent", "#cc9900");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "remote") {
-          root.style.setProperty("--accent", "#006f9f");
+          root.style.setProperty("--accent", "#0066cc");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "off_hours" || state === "offsite" || state === "closed") {
-          root.style.setProperty("--accent", "#111111");
+          root.style.setProperty("--accent", "#000000");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else {
-          root.style.setProperty("--accent", "#e07a2f");
+          root.style.setProperty("--accent", "#000000");
           root.style.setProperty("--accent-soft", "#ffffff");
         }
       }
@@ -718,9 +719,9 @@
       }
 
       function batteryColor(percent) {
-        if (percent < 30) return "#d64545";
-        if (percent < 60) return "#f2be3e";
-        return "#22a06b";
+        if (percent < 30) return "#cc0000";
+        if (percent < 60) return "#cc9900";
+        return "#008000";
       }
 
       async function loadStatus() {
