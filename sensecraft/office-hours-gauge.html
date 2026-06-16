@@ -62,6 +62,20 @@
         text-transform: uppercase;
       }
 
+      .bitmap-text {
+        color: transparent !important;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .bitmap-text-canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        image-rendering: pixelated;
+        pointer-events: none;
+        z-index: 4;
+      }
+
       .top {
         position: absolute;
         inset: 0 0 auto 0;
@@ -493,7 +507,7 @@
         margin-top: 9px;
         overflow: hidden;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         line-height: 1.15;
         text-transform: uppercase;
@@ -505,8 +519,8 @@
         right: 22px;
         bottom: 7px;
         color: var(--ink);
-        font-size: 10px;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 700;
       }
     </style>
   </head>
@@ -621,6 +635,7 @@
         });
 
         updateNextCard(status);
+        updateStatusBadge(status);
         updateAgendaVisibility();
         updateBatteryVisibility();
         updateWeekStrip(status);
@@ -651,6 +666,7 @@
           root.style.setProperty("--accent", "#000000");
           root.style.setProperty("--accent-soft", "#ffffff");
         }
+        renderSmallBitmapText();
       }
 
       function fitDynamicText() {
@@ -660,7 +676,7 @@
         fitTextToWidth(".agenda-time", 14, 11);
         fitTextToWidth(".agenda-title", 20, 14);
         fitTextToWidth(".quote-en", 21, 17);
-        fitTextToWidth(".quote-author", 13, 11);
+        fitTextToWidth(".quote-author", 14, 12);
       }
 
       function renderBitmapHeadline(text) {
@@ -689,10 +705,147 @@
         const y = Math.round((height - ascent - descent) / 2 + ascent);
         ctx.fillText(text, 0, y);
 
+        thresholdCanvas(ctx, width, height, 120);
+      }
+
+      function renderSmallBitmapText() {
+        const selectors = [
+          ".label",
+          ".name",
+          ".date",
+          ".status-label",
+          ".detail",
+          ".week-strip-label",
+          ".week-day .day",
+          ".next-time",
+          ".hours-value",
+          ".agenda-time",
+          ".agenda-title",
+          ".quote-en",
+          ".quote-author",
+          ".updated"
+        ];
+        document.querySelectorAll(selectors.join(",")).forEach(renderBitmapTextElement);
+      }
+
+      function renderBitmapTextElement(element) {
+        Array.from(element.children)
+          .filter((child) => child.classList.contains("bitmap-text-canvas"))
+          .forEach((canvas) => canvas.remove());
+
+        const text = normalizeBitmapText(element.textContent);
+        if (!text || element.offsetParent === null) {
+          return;
+        }
+
+        const width = Math.ceil(element.offsetWidth);
+        const height = Math.ceil(element.offsetHeight);
+        if (width <= 0 || height <= 0) {
+          return;
+        }
+
+        const style = window.getComputedStyle(element);
+        if (style.position === "static") {
+          element.style.position = "relative";
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.className = "bitmap-text-canvas";
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        canvas.setAttribute("aria-hidden", "true");
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.clearRect(0, 0, width, height);
+        ctx.imageSmoothingEnabled = false;
+
+        const fontSize = parseFloat(style.fontSize) || 14;
+        const fontWeight = style.fontWeight || "700";
+        const fontFamily = style.fontFamily || "Arial, Helvetica, sans-serif";
+        const lineHeight = parseLineHeight(style.lineHeight, fontSize);
+        const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+        const borderRight = parseFloat(style.borderRightWidth) || 0;
+        const borderTop = parseFloat(style.borderTopWidth) || 0;
+        const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const paddingBottom = parseFloat(style.paddingBottom) || 0;
+        const textLeft = Math.round(borderLeft + paddingLeft);
+        const textTop = Math.round(borderTop + paddingTop);
+        const textWidth = Math.max(1, Math.floor(width - borderLeft - borderRight - paddingLeft - paddingRight));
+        const textHeight = Math.max(1, Math.floor(height - borderTop - borderBottom - paddingTop - paddingBottom));
+
+        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = "#000000";
+        ctx.textBaseline = "alphabetic";
+
+        const preparedText = applyTextTransform(text, style.textTransform);
+        const canWrap = style.whiteSpace !== "nowrap" && style.whiteSpace !== "pre";
+        const lines = canWrap ? wrapBitmapText(ctx, preparedText, textWidth) : [preparedText];
+        const totalLineHeight = lines.length * lineHeight;
+        const startY = textTop + Math.max(0, (textHeight - totalLineHeight) / 2);
+        const baselineOffset = Math.round((lineHeight - fontSize) / 2 + fontSize * 0.78);
+
+        lines.forEach((line, index) => {
+          const lineWidth = ctx.measureText(line).width;
+          let x = textLeft;
+          if (style.textAlign === "right" || style.textAlign === "end") {
+            x = textLeft + textWidth - lineWidth;
+          } else if (style.textAlign === "center") {
+            x = textLeft + (textWidth - lineWidth) / 2;
+          }
+          const y = Math.round(startY + index * lineHeight + baselineOffset);
+          ctx.fillText(line, Math.round(x), y);
+        });
+
+        thresholdCanvas(ctx, width, height, 120);
+        element.classList.add("bitmap-text");
+        element.appendChild(canvas);
+      }
+
+      function normalizeBitmapText(value) {
+        return String(value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function parseLineHeight(value, fontSize) {
+        if (!value || value === "normal") {
+          return Math.round(fontSize * 1.15);
+        }
+        const numeric = parseFloat(value);
+        return Number.isFinite(numeric) ? numeric : Math.round(fontSize * 1.15);
+      }
+
+      function applyTextTransform(text, transform) {
+        if (transform === "uppercase") return text.toUpperCase();
+        if (transform === "lowercase") return text.toLowerCase();
+        return text;
+      }
+
+      function wrapBitmapText(ctx, text, maxWidth) {
+        const words = text.split(" ");
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          const trial = line ? `${line} ${word}` : word;
+          if (line && ctx.measureText(trial).width > maxWidth) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = trial;
+          }
+        });
+        if (line) lines.push(line);
+        return lines.length ? lines : [text];
+      }
+
+      function thresholdCanvas(ctx, width, height, alphaThreshold) {
         const image = ctx.getImageData(0, 0, width, height);
         const pixels = image.data;
         for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i + 3] > 120) {
+          if (pixels[i + 3] > alphaThreshold) {
             pixels[i] = 0;
             pixels[i + 1] = 0;
             pixels[i + 2] = 0;
@@ -717,6 +870,30 @@
 
         label.textContent = "Next Available";
         value.textContent = status.next_available || "";
+      }
+
+      function updateStatusBadge(status) {
+        const badge = document.querySelector(".status-label");
+        if (!badge) return;
+
+        const state = status.state || "";
+        const badgeLabels = {
+          available: "Visits OK",
+          busy: "Do Not Disturb",
+          meeting: "Do Not Disturb",
+          teaching: "Do Not Disturb",
+          focus: "Do Not Disturb",
+          lunch: "Back Soon",
+          remote: "Remote",
+          away: "Away",
+          offsite: "Away",
+          leave: "Away",
+          off_hours: "Away",
+          closed: "Closed",
+          setup: "Setup"
+        };
+
+        badge.textContent = badgeLabels[state] || status.status_label || "Status";
       }
 
       function updateWeekStrip(status) {
