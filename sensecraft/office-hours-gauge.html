@@ -468,6 +468,38 @@
         white-space: nowrap;
       }
 
+      .quote-card {
+        display: none;
+        position: absolute;
+        left: 278px;
+        right: 76px;
+        bottom: 18px;
+        height: 70px;
+        padding: 6px 0 5px 16px;
+        border-left: 8px solid var(--accent);
+        background: var(--panel);
+      }
+
+      .quote-en {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 19px;
+        font-weight: 800;
+        line-height: 1.15;
+        white-space: nowrap;
+      }
+
+      .quote-author {
+        margin-top: 9px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.15;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
       .updated {
         position: absolute;
         right: 22px;
@@ -532,6 +564,10 @@
             <div class="agenda-time" data-field="up_next_2_time"></div>
             <div class="agenda-title" data-field="up_next_2_title"></div>
           </div>
+        </div>
+        <div class="quote-card" aria-label="Today's thought">
+          <div class="quote-en"></div>
+          <div class="quote-author"></div>
         </div>
       </section>
 
@@ -623,6 +659,8 @@
         fitTextToWidth(".hours-value", 24, 18);
         fitTextToWidth(".agenda-time", 14, 11);
         fitTextToWidth(".agenda-title", 20, 14);
+        fitTextToWidth(".quote-en", 19, 14);
+        fitTextToWidth(".quote-author", 14, 11);
       }
 
       function renderBitmapHeadline(text) {
@@ -751,6 +789,7 @@
 
       function updateAgendaVisibility() {
         const items = document.querySelectorAll(".agenda-item");
+        const quote = document.querySelector(".quote-card");
         let visibleCount = 0;
         items.forEach((item) => {
           const hasContent = item.textContent.trim().length > 0;
@@ -760,8 +799,55 @@
 
         const label = document.querySelector(".agenda-label");
         if (label) {
-          label.style.display = visibleCount > 0 ? "block" : "none";
+          label.textContent = visibleCount > 0 ? "Up Next" : "Today's Thought";
+          label.style.display = "block";
         }
+
+        if (quote) {
+          quote.style.display = visibleCount > 0 ? "none" : "block";
+          if (visibleCount === 0) {
+            renderQuote();
+          }
+        }
+      }
+
+      function renderQuote() {
+        const quotes = [
+          {
+            text: "Well begun is half done.",
+            author: "Aristotle"
+          },
+          {
+            text: "No great thing is created suddenly.",
+            author: "Epictetus"
+          },
+          {
+            text: "Luck is what happens when preparation meets opportunity.",
+            author: "Seneca"
+          },
+          {
+            text: "The journey of a thousand miles begins with one step.",
+            author: "Lao Tzu"
+          },
+          {
+            text: "Waste no more time arguing what a good person should be.",
+            author: "Marcus Aurelius"
+          }
+        ];
+        const dateSeed =
+          document.querySelector("[data-field='date']")?.textContent ||
+          document.querySelector("[data-field='updated_at']")?.textContent ||
+          new Date().toDateString();
+        const index = hashText(dateSeed) % quotes.length;
+        const quote = quotes[index];
+        document.querySelector(".quote-en").textContent = quote.text;
+        document.querySelector(".quote-author").textContent = quote.author;
+      }
+
+      function hashText(value) {
+        return Array.from(String(value)).reduce((hash, char) => {
+          return (hash * 31 + char.charCodeAt(0)) >>> 0;
+        }, 7);
       }
 
       function updateBatteryVisibility() {
