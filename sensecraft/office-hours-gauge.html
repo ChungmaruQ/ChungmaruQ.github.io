@@ -7,21 +7,21 @@
     <title>Office Hours Door Display</title>
     <style>
       :root {
-        --bg: #f5f7ee;
-        --panel: #fffdf8;
-        --ink: #172326;
-        --muted: #5f6d70;
-        --line: #d8dfda;
+        --bg: #ffffff;
+        --panel: #ffffff;
+        --ink: #111111;
+        --muted: #454545;
+        --line: #111111;
         --accent: #e07a2f;
-        --accent-soft: #fff0df;
-        --accent-ink: #3b2210;
-        --office: #138a6a;
-        --away: #c83c52;
-        --focus: #7252c7;
-        --remote: #2677a8;
-        --sun: #f2be3e;
-        --sky: #6aa9d8;
-        --leaf: #22a06b;
+        --accent-soft: #ffffff;
+        --accent-ink: #111111;
+        --office: #00875a;
+        --away: #c53131;
+        --focus: #5f45a8;
+        --remote: #006f9f;
+        --sun: #f0b400;
+        --sky: #0089c7;
+        --leaf: #00875a;
       }
 
       * {
@@ -37,6 +37,7 @@
         background: var(--bg);
         color: var(--ink);
         font-family: Inter, Arial, Helvetica, sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
 
       .canvas {
@@ -62,7 +63,7 @@
         inset: 0 0 auto 0;
         height: 78px;
         background: var(--panel);
-        border-bottom: 2px solid #1f2d30;
+        border-bottom: 3px solid var(--ink);
       }
 
       .top::before {
@@ -71,7 +72,7 @@
         left: 0;
         top: 0;
         width: 800px;
-        height: 8px;
+        height: 4px;
         background: linear-gradient(
           90deg,
           var(--leaf) 0 22%,
@@ -113,10 +114,10 @@
         align-items: center;
         width: 48px;
         height: 20px;
-        border: 2px solid #1f2d30;
-        border-radius: 5px;
-        background: #fffdf8;
-        color: #1f2d30;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        background: var(--panel);
+        color: var(--ink);
       }
 
       .battery-gauge::after {
@@ -127,7 +128,7 @@
         width: 4px;
         height: 8px;
         border-radius: 0 3px 3px 0;
-        background: #1f2d30;
+        background: var(--ink);
       }
 
       .battery-fill {
@@ -168,17 +169,26 @@
         place-items: center;
         width: 106px;
         height: 106px;
-        border: 8px solid #ffffff;
+        border: 7px solid var(--ink);
         border-radius: 50%;
-        background: var(--accent-soft);
-        box-shadow: 0 0 0 7px var(--accent), 0 0 0 13px #203135;
+        background: var(--panel);
+        box-shadow: none;
+      }
+
+      .status-dot::before {
+        content: "";
+        position: absolute;
+        inset: 15px;
+        border: 7px solid var(--accent);
+        border-radius: 50%;
       }
 
       .status-dot::after {
         content: "";
-        width: 46px;
-        height: 46px;
-        border: 8px solid var(--panel);
+        position: relative;
+        width: 30px;
+        height: 30px;
+        border: 0;
         border-radius: 50%;
         background: var(--accent);
         box-sizing: border-box;
@@ -194,10 +204,10 @@
       .status-label {
         display: inline-block;
         padding: 7px 11px;
-        border-radius: 6px;
-        background: var(--accent);
+        border: 3px solid var(--accent);
+        border-radius: 5px;
+        background: var(--panel);
         color: var(--accent);
-        color: #ffffff;
         font-size: 17px;
         font-weight: 900;
         line-height: 1;
@@ -251,12 +261,12 @@
         position: relative;
         overflow: hidden;
         height: 44px;
-        border: 3px solid #1f2d30;
-        border-radius: 8px;
+        border: 3px solid var(--ink);
+        border-radius: 6px;
         background: var(--panel);
-        color: #1f2d30;
+        color: var(--ink);
         text-align: center;
-        box-shadow: 4px 4px 0 #d8dfda;
+        box-shadow: none;
       }
 
       .week-day .day {
@@ -278,24 +288,25 @@
       }
 
       .week-day.away {
-        background: var(--accent);
-        color: #ffffff;
-        box-shadow: 4px 4px 0 var(--accent-soft);
+        border-color: var(--accent);
+        background: var(--panel);
+        color: var(--ink);
+        box-shadow: none;
       }
 
       .week-day.away .slash {
         display: block;
         position: absolute;
-        z-index: 3;
-        left: -12px;
-        top: 17px;
-        width: 98px;
-        height: 10px;
+        z-index: 1;
+        left: -9px;
+        top: 19px;
+        width: 91px;
+        height: 7px;
         border-radius: 999px;
-        border: 2px solid #1f2d30;
-        background: #fffdf8;
-        box-shadow: 2px 2px 0 rgba(31, 45, 48, 0.22);
-        transform: rotate(-31deg);
+        border: 0;
+        background: var(--ink);
+        box-shadow: none;
+        transform: rotate(-30deg);
         pointer-events: none;
       }
 
@@ -305,10 +316,10 @@
         top: 108px;
         width: 182px;
         height: 218px;
-        border: 3px solid #1f2d30;
-        border-radius: 8px;
+        border: 3px solid var(--ink);
+        border-radius: 6px;
         background: var(--panel);
-        box-shadow: 9px 9px 0 var(--sky);
+        box-shadow: none;
       }
 
       .next .label {
@@ -316,7 +327,7 @@
         left: 16px;
         top: 18px;
         width: 145px;
-        color: var(--accent);
+        color: var(--muted);
       }
 
       .next-time {
@@ -337,8 +348,8 @@
         bottom: 0;
         width: 800px;
         height: 124px;
-        border-top: 3px solid #1f2d30;
-        background: #eff7f3;
+        border-top: 3px solid var(--ink);
+        background: var(--panel);
       }
 
       .bottom::before {
@@ -347,7 +358,7 @@
         left: 255px;
         right: 0;
         top: 0;
-        height: 8px;
+        height: 4px;
         background: linear-gradient(
           90deg,
           var(--sun) 0 24%,
@@ -363,18 +374,19 @@
         bottom: 0;
         width: 255px;
         height: 124px;
-        padding: 17px 22px;
-        background: #143f3a;
-        border-right: 3px solid #1f2d30;
+        padding: 14px 22px 17px;
+        border-top: 6px solid var(--office);
+        background: var(--panel);
+        border-right: 3px solid var(--ink);
       }
 
       .hours .label {
-        color: #bfe8d9;
+        color: var(--muted);
       }
 
       .hours-value {
         margin-top: 9px;
-        color: #ffffff;
+        color: var(--ink);
         font-size: 25px;
         font-weight: 950;
         line-height: 1.2;
@@ -401,8 +413,9 @@
         width: 230px;
         height: 70px;
         padding: 10px 12px 10px 15px;
+        border: 2px solid var(--ink);
         border-left: 8px solid var(--accent);
-        border-radius: 8px;
+        border-radius: 6px;
         background: var(--panel);
       }
 
@@ -550,23 +563,23 @@
         const state = status.state || "";
         const root = document.documentElement;
         if (state === "available") {
-          root.style.setProperty("--accent", "#2f7b65");
-          root.style.setProperty("--accent-soft", "#dcebe5");
+          root.style.setProperty("--accent", "#00875a");
+          root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "away" || state === "leave") {
-          root.style.setProperty("--accent", "#a93636");
-          root.style.setProperty("--accent-soft", "#eedada");
+          root.style.setProperty("--accent", "#c53131");
+          root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "focus") {
-          root.style.setProperty("--accent", "#6a4f9a");
-          root.style.setProperty("--accent-soft", "#e2dced");
+          root.style.setProperty("--accent", "#5f45a8");
+          root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "remote") {
-          root.style.setProperty("--accent", "#2f6577");
-          root.style.setProperty("--accent-soft", "#dbe7ea");
+          root.style.setProperty("--accent", "#006f9f");
+          root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "off_hours" || state === "offsite" || state === "closed") {
-          root.style.setProperty("--accent", "#606968");
-          root.style.setProperty("--accent-soft", "#e8e4dd");
+          root.style.setProperty("--accent", "#111111");
+          root.style.setProperty("--accent-soft", "#ffffff");
         } else {
           root.style.setProperty("--accent", "#e07a2f");
-          root.style.setProperty("--accent-soft", "#fff0df");
+          root.style.setProperty("--accent-soft", "#ffffff");
         }
       }
 
