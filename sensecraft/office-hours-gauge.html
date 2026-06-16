@@ -137,9 +137,9 @@
 
       .battery-fill {
         position: absolute;
-        left: 3px;
-        top: 3px;
-        bottom: 3px;
+        left: 4px;
+        top: 4px;
+        bottom: 4px;
         width: 0%;
         border-radius: 2px;
         background: var(--battery-color, var(--leaf));
@@ -773,7 +773,7 @@
         const rawValue = text.textContent.trim();
         if (!rawValue) {
           gauge.style.display = "none";
-          fill.style.width = "0%";
+          fill.style.width = "0px";
           return;
         }
 
@@ -781,7 +781,7 @@
         const percent = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
         gauge.style.display = "flex";
         gauge.setAttribute("aria-label", `Battery ${percent}%`);
-        fill.style.width = `${percent}%`;
+        fill.style.width = `calc((100% - 8px) * ${percent / 100})`;
         fill.style.background = batteryColor(percent);
       }
 
