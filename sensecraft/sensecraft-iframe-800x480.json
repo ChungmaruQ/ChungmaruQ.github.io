@@ -1,0 +1,42 @@
+{
+  "stageElements": [
+    {
+      "children": [
+        {
+          "cornerRadius": 0,
+          "fill": "transparent",
+          "height": 480,
+          "htmlConfig": {
+            "htmlRenderMode": "iframe",
+            "htmlUrl": "https://chungmaruq.github.io/sensecraft/office-hours-gauge.html?v=e1002-pixel-tuned",
+            "previewHeight": 480,
+            "previewWidth": 800
+          },
+          "id": "html-1781573660412-ijli66k",
+          "parentId": "__device_container_group__",
+          "rotation": 0,
+          "stroke": "transparent",
+          "strokeWidth": 0,
+          "type": "html",
+          "width": 800,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "cornerRadius": 0,
+      "fill": "#ffffff",
+      "height": 480,
+      "id": "__device_container_group__",
+      "stroke": "#ffffff",
+      "strokeWidth": 0,
+      "type": "group",
+      "width": 800,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "stageSize": {
+    "width": 800,
+    "height": 480
+  }
+}
