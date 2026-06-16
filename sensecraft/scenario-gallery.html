@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SenseCraft Status Scenarios</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --ink: #172326;
+        --muted: #5f6d70;
+        --panel: #ffffff;
+        --line: #cdd6d0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, Arial, Helvetica, sans-serif;
+      }
+
+      header {
+        padding: 24px 28px 8px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+        gap: 22px;
+        padding: 16px 28px 28px;
+      }
+
+      .scenario {
+        border: 2px solid #1f2d30;
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 7px 7px 0 #6aa9d8;
+        overflow: hidden;
+      }
+
+      .scenario-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px 11px;
+        border-bottom: 2px solid #1f2d30;
+      }
+
+      .scenario-main {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .status-dot {
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--ink);
+        background: var(--dot, #ffffff);
+      }
+
+      .scenario-title {
+        font-size: 16px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+
+      .scenario-note {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-align: right;
+      }
+
+      .frame-wrap {
+        width: 100%;
+        aspect-ratio: 5 / 3;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      iframe {
+        width: 800px;
+        height: 480px;
+        border: 0;
+        transform: scale(var(--preview-scale));
+        transform-origin: top left;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SenseCraft Status Scenarios</h1>
+      <p>Current 800 x 480 E1002 design, using sample JSON states and Spectra 6-safe colors.</p>
+    </header>
+
+    <section class="grid" id="grid"></section>
+
+    <script>
+      const scenarios = [
+        { title: "Available", note: "Visitors welcome", file: "available.json", color: "#00ff00" },
+        { title: "Available + Thought", note: "No schedule to list", file: "available-quote.json", color: "#00ff00" },
+        { title: "Busy", note: "Calendar event blocks visits", file: "busy.json", color: "#0000ff" },
+        { title: "In a Meeting", note: "Meeting keyword/context", file: "meeting.json", color: "#0000ff" },
+        { title: "In Class", note: "Class/lecture keyword", file: "teaching.json", color: "#0000ff" },
+        { title: "Focus Time", note: "Default 10:00-12:00", file: "focus.json", color: "#0000ff" },
+        { title: "Lunch Break", note: "Default 12:00-13:00", file: "lunch.json", color: "#ffff00" },
+        { title: "Out of Office", note: "Offsite location or trip", file: "offsite.json", color: "#000000" },
+        { title: "Geofence Away", note: "10 km+ from office", file: "geofence-away.json", color: "#ff0000" },
+        { title: "Remote", note: "Working away from office", file: "remote.json", color: "#0000ff" },
+        { title: "On Leave", note: "Vacation or day off", file: "leave.json", color: "#ff0000" },
+        { title: "After Hours", note: "Outside office hours", file: "off-hours.json", color: "#000000" },
+        { title: "Tomorrow Event", note: "Date shown in Up Next", file: "tomorrow-class.json", color: "#00ff00" },
+        { title: "Low Battery", note: "Battery alert color only", file: "low-battery.json", color: "#ff0000" },
+        { title: "Setup Needed", note: "Calendar/auth issue", file: "setup.json", color: "#000000" }
+      ];
+
+      const grid = document.getElementById("grid");
+
+      function render() {
+        grid.innerHTML = "";
+        scenarios.forEach(({ title, note, file, color }) => {
+          const card = document.createElement("article");
+          card.className = "scenario";
+          card.style.setProperty("--dot", color);
+          const dataUrl = new URL(`scenarios/${file}`, window.location.href).toString();
+          card.innerHTML = `
+            <div class="scenario-head">
+              <div class="scenario-main">
+                <div class="status-dot" aria-hidden="true"></div>
+                <div class="scenario-title">${title}</div>
+              </div>
+              <div class="scenario-note">${note}</div>
+            </div>
+            <div class="frame-wrap">
+              <iframe
+                title="${title}"
+                src="office-hours-sensecraft.html?data=${encodeURIComponent(dataUrl)}&preview=${Date.now()}-${file}"
+              ></iframe>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        resizeFrames();
+      }
+
+      function resizeFrames() {
+        document.querySelectorAll(".frame-wrap").forEach((wrap) => {
+          wrap.style.setProperty("--preview-scale", String(wrap.clientWidth / 800));
+        });
+      }
+
+      render();
+      window.addEventListener("resize", resizeFrames);
+    </script>
+  </body>
+</html>

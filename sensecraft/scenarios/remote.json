@@ -1,0 +1,23 @@
+{
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Tue, Jun 16",
+  "state": "remote",
+  "status_label": "Remote",
+  "headline": "Working Remotely",
+  "detail": "Working from home.",
+  "next_available": "Tomorrow 09:30",
+  "current_until": "17:00",
+  "todays_hours": "09:30-12:00 / 13:00-17:00",
+  "battery_level": "76%",
+  "up_next_1_time": "10:30-11:00",
+  "up_next_1_title": "Busy",
+  "up_next_1_type": "busy",
+  "up_next_2_time": "13:00-14:00",
+  "up_next_2_title": "Office Hours",
+  "up_next_2_type": "office",
+  "up_next_3_time": "",
+  "up_next_3_title": "",
+  "up_next_3_type": "",
+  "updated_at": "Jun 16, 09:45",
+  "source": "preview"
+}

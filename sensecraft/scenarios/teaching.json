@@ -1,0 +1,23 @@
+{
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Tue, Jun 16",
+  "state": "teaching",
+  "status_label": "In Class",
+  "headline": "In Class",
+  "detail": "Class in session.",
+  "next_available": "13:00",
+  "current_until": "12:00",
+  "todays_hours": "09:30-12:00 / 13:00-17:00",
+  "battery_level": "64%",
+  "up_next_1_time": "10:00-12:00",
+  "up_next_1_title": "Class",
+  "up_next_1_type": "teaching",
+  "up_next_2_time": "13:00-14:00",
+  "up_next_2_title": "Office Hours",
+  "up_next_2_type": "office",
+  "up_next_3_time": "",
+  "up_next_3_title": "",
+  "up_next_3_type": "",
+  "updated_at": "Jun 16, 10:20",
+  "source": "preview"
+}
