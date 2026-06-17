@@ -14,7 +14,7 @@
         --ink: #000000;
         --muted: #000000;
         --line: #000000;
-        --accent: #000000;
+        --accent: #0000ff;
         --accent-soft: #ffffff;
         --accent-ink: #000000;
         --office: #00ff00;
@@ -40,7 +40,7 @@
         color: var(--ink);
         font-family: Arial, Helvetica, sans-serif;
         font-synthesis: none;
-        -webkit-font-smoothing: none;
+        -webkit-font-smoothing: antialiased;
         text-rendering: optimizeSpeed;
       }
 
@@ -65,43 +65,32 @@
       .top {
         position: absolute;
         inset: 0 0 auto 0;
-        height: 78px;
+        height: 68px;
         background: var(--panel);
-        border-bottom: 4px solid var(--ink);
+        border-bottom: 1px solid var(--line);
       }
 
       .top::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 800px;
-        height: 4px;
-        background: linear-gradient(
-          90deg,
-          var(--leaf) 0 22%,
-          var(--sun) 22% 47%,
-          var(--ink) 47% 73%,
-          var(--sky) 73% 100%
-        );
+        display: none;
       }
 
       .brand {
         position: absolute;
-        left: 24px;
-        top: 18px;
+        left: 22px;
+        top: 14px;
       }
 
       .name-line {
         margin-top: 7px;
         display: flex;
         align-items: center;
-        max-width: 430px;
+        gap: 12px;
+        max-width: 548px;
       }
 
       .name {
         min-width: 0;
-        max-width: 320px;
+        max-width: 470px;
         overflow: hidden;
         color: var(--ink);
         font-size: 30px;
@@ -112,13 +101,12 @@
 
       .battery-gauge {
         display: none;
-        position: absolute;
-        left: 184px;
-        bottom: 18px;
+        position: relative;
+        flex: 0 0 auto;
         align-items: center;
-        width: 48px;
-        height: 20px;
-        border: 2px solid var(--ink);
+        width: 44px;
+        height: 18px;
+        border: 2px solid var(--muted);
         border-radius: 4px;
         background: var(--panel);
         color: var(--ink);
@@ -128,18 +116,18 @@
         content: "";
         position: absolute;
         right: -6px;
-        top: 5px;
+        top: 4px;
         width: 4px;
         height: 8px;
         border-radius: 0 3px 3px 0;
-        background: var(--ink);
+        background: var(--muted);
       }
 
       .battery-fill {
         position: absolute;
         left: 4px;
-        top: 4px;
-        bottom: 4px;
+        top: 3px;
+        bottom: 3px;
         width: 0%;
         border-radius: 2px;
         background: var(--battery-color, var(--leaf));
@@ -152,7 +140,7 @@
       .date-block {
         position: absolute;
         right: 24px;
-        top: 18px;
+        top: 14px;
         width: 210px;
         text-align: right;
       }
@@ -167,31 +155,31 @@
 
       .status-dot {
         position: absolute;
-        left: 28px;
-        top: 155px;
+        left: 22px;
+        top: 175px;
         display: grid;
         place-items: center;
-        width: 106px;
-        height: 106px;
-        border: 8px solid var(--ink);
+        width: 82px;
+        height: 82px;
+        border: 7px solid var(--line);
         border-radius: 50%;
-        background: var(--panel);
+        background: var(--accent-soft);
         box-shadow: none;
       }
 
       .status-dot::before {
         content: "";
         position: absolute;
-        inset: 16px;
-        border: 6px solid var(--accent);
+        inset: 15px;
+        border: 6px solid var(--line);
         border-radius: 50%;
       }
 
       .status-dot::after {
         content: "";
         position: relative;
-        width: 28px;
-        height: 28px;
+        width: 38px;
+        height: 38px;
         border: 0;
         border-radius: 50%;
         background: var(--accent);
@@ -200,41 +188,55 @@
 
       .status {
         position: absolute;
-        left: 166px;
-        top: 130px;
-        width: 390px;
+        left: 126px;
+        top: 158px;
+        width: 430px;
       }
 
       .status-label {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        justify-content: center;
-        min-width: 118px;
-        height: 44px;
-        padding: 0 12px;
-        border: 4px solid var(--accent);
-        border-radius: 4px;
-        background: var(--panel);
+        gap: 8px;
+        min-width: 0;
+        height: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
         color: var(--ink);
-        font-size: 16px;
-        font-weight: 700;
+        font-size: 18px;
+        font-weight: 800;
         line-height: 1;
-        text-align: center;
+        text-align: left;
         text-transform: uppercase;
         white-space: nowrap;
       }
 
+      .status-label::before {
+        content: "";
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--ink);
+        background: var(--accent);
+      }
+
+      .status-label.emphasis-badge {
+        min-width: 0;
+        font-size: 18px;
+      }
+
       .headline-shell {
-        margin-top: 14px;
-        width: 390px;
-        height: 62px;
+        margin-top: 8px;
+        width: 430px;
+        height: 68px;
         overflow: hidden;
       }
 
       .headline-bitmap {
         display: block;
-        width: 390px;
-        height: 62px;
+        width: 430px;
+        height: 68px;
         image-rendering: pixelated;
       }
 
@@ -258,7 +260,7 @@
         margin-top: 12px;
         overflow: hidden;
         color: var(--muted);
-        font-size: 20px;
+        font-size: 21px;
         font-weight: 700;
         line-height: 1.1;
         white-space: nowrap;
@@ -266,23 +268,25 @@
 
       .week-strip {
         display: none;
-        margin-top: 12px;
-        width: 372px;
+        position: absolute;
+        left: 18px;
+        top: 204px;
+        width: 130px;
       }
 
       .week-strip-label {
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         color: var(--muted);
-        font-size: 12px;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 800;
         line-height: 1;
         text-transform: uppercase;
       }
 
       .week-days {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
       }
 
       .week-day {
@@ -290,9 +294,11 @@
         place-items: center;
         position: relative;
         overflow: hidden;
-        height: 36px;
-        border: 3px solid var(--ink);
-        border-radius: 4px;
+        width: 56px;
+        height: 30px;
+        border: 2px solid var(--ink);
+        border-left-width: 6px;
+        border-radius: 0;
         background: var(--panel);
         color: var(--ink);
         text-align: center;
@@ -303,8 +309,10 @@
         display: block;
         position: relative;
         z-index: 2;
-        font-size: 16px;
-        font-weight: 700;
+        padding: 0 4px;
+        background: var(--panel);
+        font-size: 15px;
+        font-weight: 800;
         line-height: 1;
         text-transform: uppercase;
       }
@@ -318,7 +326,8 @@
       }
 
       .week-day.away {
-        border-color: var(--away);
+        border-color: var(--ink);
+        border-left-color: var(--away);
         background: var(--panel);
         color: var(--ink);
         box-shadow: none;
@@ -329,9 +338,9 @@
         position: absolute;
         z-index: 1;
         left: -7px;
-        top: 14px;
+        top: 16px;
         width: 82px;
-        height: 7px;
+        height: 5px;
         border-radius: 0;
         border: 0;
         background: var(--away);
@@ -342,29 +351,31 @@
 
       .next {
         position: absolute;
-        left: 594px;
-        top: 108px;
-        width: 182px;
-        height: 218px;
-        border: 4px solid var(--ink);
-        border-radius: 4px;
-        background: var(--panel);
+        left: 624px;
+        top: 86px;
+        width: 152px;
+        height: 260px;
+        border-left: 1px solid var(--line);
+        border-radius: 0;
+        background: transparent;
         box-shadow: none;
       }
 
       .next .label {
         position: absolute;
-        left: 16px;
-        top: 18px;
-        width: 145px;
+        left: 18px;
+        top: 107px;
+        width: 130px;
         color: var(--muted);
       }
 
       .next-time {
         position: absolute;
-        left: 16px;
-        top: 55px;
-        width: 156px;
+        left: 18px;
+        top: 134px;
+        width: 130px;
+        max-height: 104px;
+        overflow: hidden;
         color: var(--ink);
         font-size: 30px;
         font-weight: 800;
@@ -377,37 +388,26 @@
         left: 0;
         bottom: 0;
         width: 800px;
-        height: 124px;
-        border-top: 4px solid var(--ink);
+        height: 116px;
+        border-top: 1px solid var(--line);
         background: var(--panel);
       }
 
       .bottom::before {
-        content: "";
-        position: absolute;
-        left: 255px;
-        right: 0;
-        top: 0;
-        height: 4px;
-        background: linear-gradient(
-          90deg,
-          var(--sun) 0 22%,
-          var(--sky) 22% 50%,
-          var(--leaf) 50% 75%,
-          var(--ink) 75% 100%
-        );
+        display: none;
       }
 
       .hours {
         position: absolute;
         left: 0;
         bottom: 0;
-        width: 255px;
-        height: 124px;
-        padding: 14px 22px 17px;
-        border-top: 6px solid var(--office);
-        background: var(--panel);
-        border-right: 4px solid var(--ink);
+        width: 230px;
+        height: 116px;
+        padding: 17px 20px;
+        overflow: hidden;
+        border-top: 0;
+        background: transparent;
+        border-right: 1px solid var(--line);
       }
 
       .hours .label {
@@ -417,76 +417,78 @@
       .hours-value {
         margin-top: 9px;
         color: var(--ink);
-        font-size: 24px;
+        font-size: 25px;
         font-weight: 800;
         line-height: 1.2;
       }
 
       .agenda {
         position: absolute;
-        left: 278px;
-        right: 22px;
-        bottom: 18px;
+        left: 250px;
+        right: 20px;
+        bottom: 20px;
         height: 70px;
       }
 
       .agenda-label {
         position: absolute;
-        left: 278px;
-        bottom: 93px;
+        left: 250px;
+        bottom: 84px;
         z-index: 2;
         width: 180px;
-        color: var(--ink);
+        color: var(--muted);
         white-space: nowrap;
       }
 
       .agenda-item {
         position: absolute;
-        top: 0;
+        top: 20px;
         width: 230px;
-        height: 70px;
-        padding: 10px 12px 10px 15px;
-        border: 2px solid var(--ink);
-        border-left: 8px solid var(--accent);
-        border-radius: 4px;
-        background: var(--panel);
+        height: 50px;
+        overflow: hidden;
+        padding: 1px 12px 4px 17px;
+        border: 0;
+        border-left: 5px solid var(--accent);
+        border-radius: 0;
+        background: transparent;
       }
 
       .agenda-item.second {
-        left: 252px;
-        border-color: var(--ink);
-        border-left-color: var(--ink);
+        left: 270px;
+        border-left-color: var(--office);
       }
 
       .agenda-time {
         overflow: hidden;
         color: var(--muted);
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 700;
         line-height: 1.1;
         white-space: nowrap;
       }
 
       .agenda-title {
-        margin-top: 5px;
+        margin-top: 4px;
         overflow: hidden;
         color: var(--ink);
         font-size: 20px;
         font-weight: 800;
         line-height: 1.1;
         white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .quote-card {
         display: none;
         position: absolute;
-        left: 278px;
-        right: 58px;
+        left: 250px;
+        right: 50px;
         bottom: 18px;
-        height: 70px;
-        padding: 5px 0 5px 16px;
-        border-left: 8px solid var(--ink);
-        background: var(--panel);
+        height: 52px;
+        overflow: hidden;
+        padding: 0 0 4px 17px;
+        border-left: 5px solid var(--accent);
+        background: transparent;
       }
 
       .quote-en {
@@ -512,8 +514,8 @@
       .updated {
         position: absolute;
         right: 22px;
-        bottom: 7px;
-        color: var(--ink);
+        bottom: 8px;
+        color: var(--muted);
         font-size: 10px;
         font-weight: 600;
       }
@@ -526,6 +528,10 @@
           <div class="label">Office Hours</div>
           <div class="name-line">
             <div class="name" data-field="display_name">Prof. Hyunwoo Kim</div>
+            <div class="battery-gauge" aria-label="Battery level">
+              <div class="battery-fill" aria-hidden="true"></div>
+              <div class="battery-text" data-field="battery_level"></div>
+            </div>
           </div>
         </div>
         <div class="date-block">
@@ -539,29 +545,25 @@
       <section class="status">
         <div class="status-label" data-field="status_label">Loading</div>
         <div class="headline-shell">
-          <canvas class="headline-bitmap" width="390" height="62" aria-hidden="true"></canvas>
+          <canvas class="headline-bitmap" width="430" height="68" aria-hidden="true"></canvas>
           <div class="headline" data-field="headline">Checking</div>
         </div>
         <div class="detail" data-field="detail">Updating status.</div>
+      </section>
+
+      <section class="next">
+        <div class="label">Next Available</div>
+        <div class="next-time" data-field="next_available"></div>
         <div class="week-strip" aria-label="Away days this week">
           <div class="week-strip-label">Away This Week</div>
           <div class="week-days"></div>
         </div>
       </section>
 
-      <section class="next">
-        <div class="label">Next Available</div>
-        <div class="next-time" data-field="next_available"></div>
-      </section>
-
       <section class="bottom">
         <div class="hours">
           <div class="label">Office Hours</div>
           <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-17:00</div>
-          <div class="battery-gauge" aria-label="Battery level">
-            <div class="battery-fill" aria-hidden="true"></div>
-            <div class="battery-text" data-field="battery_level"></div>
-          </div>
         </div>
         <div class="agenda-label label">Up Next</div>
         <div class="agenda">
@@ -642,10 +644,10 @@
         if (state === "available") {
           root.style.setProperty("--accent", "#00ff00");
           root.style.setProperty("--accent-soft", "#ffffff");
-        } else if (state === "away" || state === "leave") {
+        } else if (state === "away" || state === "leave" || state === "offsite") {
           root.style.setProperty("--accent", "#ff0000");
           root.style.setProperty("--accent-soft", "#ffffff");
-        } else if (state === "focus" || state === "meeting" || state === "teaching") {
+        } else if (state === "busy" || state === "meeting" || state === "teaching" || state === "focus") {
           root.style.setProperty("--accent", "#0000ff");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "lunch") {
@@ -654,7 +656,7 @@
         } else if (state === "remote") {
           root.style.setProperty("--accent", "#0000ff");
           root.style.setProperty("--accent-soft", "#ffffff");
-        } else if (state === "off_hours" || state === "offsite" || state === "closed") {
+        } else if (state === "off_hours" || state === "closed") {
           root.style.setProperty("--accent", "#000000");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else {
@@ -664,10 +666,11 @@
       }
 
       function fitDynamicText() {
+        fitTextToWidth(".name", 30, 24);
         fitTextToWidth(".detail", 20, 16);
-        fitTextToWidth(".next-time", 30, 22);
+        fitTextToWidth(".next-time", 30, 18);
         fitTextToWidth(".hours-value", 24, 18);
-        fitTextToWidth(".agenda-time", 14, 11);
+        fitTextToWidth(".agenda-time", 15, 11);
         fitTextToWidth(".agenda-title", 20, 14);
         fitTextToWidth(".quote-en", 21, 17);
         fitTextToWidth(".quote-author", 13, 11);
@@ -755,6 +758,10 @@
         };
 
         badge.textContent = badgeLabels[state] || status.status_label || "Status";
+        badge.classList.toggle(
+          "emphasis-badge",
+          ["away", "offsite", "leave", "off_hours", "closed"].includes(state)
+        );
       }
 
       function updateWeekStrip(status) {
@@ -771,13 +778,18 @@
           return;
         }
 
-        const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-        daysEl.innerHTML = dayLabels.map((day) => {
-          const isAway = awayDays.includes(day.toLowerCase());
+        const dayLabels = {
+          mon: "Mon",
+          tue: "Tue",
+          wed: "Wed",
+          thu: "Thu",
+          fri: "Fri"
+        };
+        daysEl.innerHTML = awayDays.map((day) => {
+          const label = dayLabels[day] || day;
           return `
-            <div class="week-day${isAway ? " away" : ""}" aria-label="${day} ${isAway ? "away" : "in office"}">
-              ${isAway ? '<span class="slash" aria-hidden="true"></span>' : ''}
-              <span class="day">${day}</span>
+            <div class="week-day away" aria-label="${label} away">
+              <span class="day">${label}</span>
             </div>
           `;
         }).join("");
