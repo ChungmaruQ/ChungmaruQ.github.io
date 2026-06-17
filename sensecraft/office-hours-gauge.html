@@ -621,11 +621,20 @@
 
       const params = new URLSearchParams(window.location.search);
       const refreshMs = 60 * 1000;
+      const defaultDataUrl = getDefaultDataUrl();
       const dataUrl =
         params.get("data") ||
         window.OFFICE_HOURS_DATA_URL ||
-        "https://raw.githubusercontent.com/ChungmaruQ/desktop-tutorial/master/sensecraft.json";
+        defaultDataUrl;
+      const statusStorageKey = `office-hours:last-status:${dataUrl}`;
       let hasLoadedStatus = false;
+
+      function getDefaultDataUrl() {
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          return new URL("status.json", window.location.href).toString();
+        }
+        return "https://chungmaruq.github.io/sensecraft/status.json";
+      }
 
       function fitCanvasToViewport() {
         const width = window.innerWidth || 800;
@@ -638,6 +647,41 @@
         const nextUrl = new URL(url, window.location.href);
         nextUrl.searchParams.set("_", Date.now().toString());
         return nextUrl.toString();
+      }
+
+      function normalizeStatus(status) {
+        return { ...fallbackStatus, ...(status || {}) };
+      }
+
+      function isUsableStatus(status) {
+        return Boolean(
+          status &&
+          typeof status === "object" &&
+          !Array.isArray(status) &&
+          (status.state || status.headline || status.updated_at)
+        );
+      }
+
+      function loadCachedStatus() {
+        try {
+          const raw = window.localStorage?.getItem(statusStorageKey);
+          if (!raw) return null;
+          const cached = JSON.parse(raw);
+          return isUsableStatus(cached) ? normalizeStatus(cached) : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function saveCachedStatus(status) {
+        try {
+          window.localStorage?.setItem(
+            statusStorageKey,
+            JSON.stringify({ ...status, cached_at: new Date().toISOString() })
+          );
+        } catch (error) {
+          // Storage may be unavailable in some embedded previews.
+        }
       }
 
       function applyStatus(status) {
@@ -979,16 +1023,27 @@
         try {
           const response = await fetch(withCacheBust(dataUrl), { cache: "no-store" });
           if (!response.ok) throw new Error("Status fetch failed");
-          applyStatus(await response.json());
+          const status = await response.json();
+          if (!isUsableStatus(status)) throw new Error("Status JSON is empty");
+          const normalizedStatus = normalizeStatus(status);
+          applyStatus(normalizedStatus);
+          saveCachedStatus(normalizedStatus);
           hasLoadedStatus = true;
         } catch (error) {
-          if (!hasLoadedStatus) {
+          const cachedStatus = loadCachedStatus();
+          if (cachedStatus) {
+            applyStatus(cachedStatus);
+            hasLoadedStatus = true;
+          } else if (!hasLoadedStatus) {
             applyStatus(fallbackStatus);
           }
         }
       }
 
       fitCanvasToViewport();
+      const cachedStatus = loadCachedStatus();
+      applyStatus(cachedStatus || fallbackStatus);
+      hasLoadedStatus = Boolean(cachedStatus);
       loadStatus();
       window.addEventListener("resize", fitCanvasToViewport);
       if (dataUrl) {
