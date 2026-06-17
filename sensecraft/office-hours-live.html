@@ -272,23 +272,23 @@
         display: none;
         position: absolute;
         left: 18px;
-        top: 204px;
+        top: 208px;
         width: 130px;
       }
 
       .week-strip-label {
-        margin-bottom: 8px;
+        margin-bottom: 7px;
         color: var(--muted);
-        font-size: 14px;
-        font-weight: 800;
+        font-size: 12px;
+        font-weight: 700;
         line-height: 1;
         text-transform: uppercase;
       }
 
       .week-days {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
+        display: grid;
+        grid-template-columns: repeat(5, 24px);
+        gap: 2px;
       }
 
       .week-day {
@@ -296,10 +296,10 @@
         place-items: center;
         position: relative;
         overflow: hidden;
-        width: 56px;
-        height: 30px;
+        box-sizing: border-box;
+        width: 24px;
+        height: 24px;
         border: 2px solid var(--ink);
-        border-left-width: 6px;
         border-radius: 0;
         background: var(--panel);
         color: var(--ink);
@@ -308,15 +308,21 @@
       }
 
       .week-day .day {
-        display: block;
-        position: relative;
+        display: grid;
+        place-items: center;
+        position: absolute;
         z-index: 2;
-        padding: 0 4px;
-        background: var(--panel);
+        left: -2px;
+        top: -2px;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: transparent;
         font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         line-height: 1;
+        text-align: center;
         text-transform: uppercase;
       }
 
@@ -330,7 +336,6 @@
 
       .week-day.away {
         border-color: var(--ink);
-        border-left-color: var(--away);
         background: var(--panel);
         color: var(--ink);
         box-shadow: none;
@@ -339,17 +344,52 @@
       .week-day.away .slash {
         display: block;
         position: absolute;
-        z-index: 1;
-        left: -7px;
-        top: 16px;
-        width: 82px;
-        height: 5px;
+        z-index: 4;
+        left: -2px;
+        top: -2px;
+        width: 24px;
+        height: 24px;
         border-radius: 0;
         border: 0;
-        background: var(--away);
+        background: linear-gradient(
+          to bottom right,
+          transparent 0,
+          transparent calc(50% - 2px),
+          var(--away) calc(50% - 2px),
+          var(--away) calc(50% + 2px),
+          transparent calc(50% + 2px),
+          transparent 100%
+        );
         box-shadow: none;
-        transform: rotate(-30deg);
+        transform: none;
         pointer-events: none;
+      }
+
+      .week-strip.all-week .week-days {
+        display: block;
+      }
+
+      .week-range {
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+        width: 130px;
+        height: 27px;
+        border: 2px solid var(--ink);
+        border-top: 5px solid var(--away);
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .week-range .day {
+        position: relative;
+        z-index: 2;
+        font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
       }
 
       .next {
@@ -367,7 +407,7 @@
       .next .label {
         position: absolute;
         left: 18px;
-        top: 107px;
+        top: 71px;
         width: 130px;
         color: var(--muted);
         font-size: 15px;
@@ -378,7 +418,7 @@
       .next-label-bitmap {
         position: absolute;
         left: 18px;
-        top: 107px;
+        top: 71px;
         display: block;
         width: 130px;
         height: 20px;
@@ -388,7 +428,7 @@
       .next-time {
         position: absolute;
         left: 18px;
-        top: 134px;
+        top: 98px;
         width: 130px;
         max-height: 104px;
         overflow: hidden;
@@ -538,6 +578,24 @@
         font-size: 12px;
         font-weight: 700;
       }
+
+      .crisp-text-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+      }
+
+      .crisp-text-layer canvas {
+        position: absolute;
+        display: block;
+        image-rendering: pixelated;
+      }
+
+      .crisp-text-source {
+        color: transparent !important;
+        text-shadow: none !important;
+      }
     </style>
   </head>
   <body>
@@ -665,6 +723,7 @@
 
       const params = new URLSearchParams(window.location.search);
       const refreshMs = 60 * 1000;
+      const crispTextMode = params.get("crisp") !== "0";
       const defaultDataUrl = getDefaultDataUrl();
       const dataUrl =
         params.get("data") ||
@@ -756,7 +815,7 @@
         } else if (state === "lunch") {
           root.style.setProperty("--accent", "#ffff00");
           root.style.setProperty("--accent-soft", "#ffffff");
-        } else if (state === "remote") {
+        } else if (state === "remote" || state === "campus") {
           root.style.setProperty("--accent", "#0000ff");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "off_hours" || state === "closed") {
@@ -766,6 +825,8 @@
           root.style.setProperty("--accent", "#000000");
           root.style.setProperty("--accent-soft", "#ffffff");
         }
+
+        renderCrispTextLayer();
       }
 
       function fitDynamicText() {
@@ -867,6 +928,196 @@
         thresholdCanvas(ctx, width, height, 120);
       }
 
+      function renderCrispTextLayer() {
+        document.querySelector(".crisp-text-layer")?.remove();
+        document.querySelectorAll(".crisp-text-source").forEach((element) => {
+          element.classList.remove("crisp-text-source");
+        });
+
+        if (!crispTextMode) return;
+
+        const root = document.querySelector(".canvas");
+        if (!root) return;
+
+        const rootRect = root.getBoundingClientRect();
+        const layer = document.createElement("div");
+        layer.className = "crisp-text-layer";
+        root.appendChild(layer);
+
+        [
+          { selector: ".brand > .label", uppercase: true },
+          { selector: ".name" },
+          { selector: ".date-block > .label", uppercase: true },
+          { selector: ".date" },
+          { selector: ".status-label", uppercase: true, xOffset: 22 },
+          { selector: ".detail" },
+          { selector: ".next-time", wrap: true },
+          { selector: ".week-strip-label", uppercase: true },
+          { selector: ".week-day .day", uppercase: true, visualCenter: true },
+          { selector: ".week-range .day", uppercase: true },
+          { selector: ".hours .label", uppercase: true },
+          { selector: ".hours-value", hours: true },
+          { selector: ".agenda-label", uppercase: true },
+          { selector: ".agenda-time" },
+          { selector: ".agenda-title" },
+          { selector: ".quote-en" },
+          { selector: ".quote-author", uppercase: true },
+          { selector: ".updated" }
+        ].forEach((target) => {
+          document.querySelectorAll(target.selector).forEach((element) => {
+            renderCrispTextElement(element, rootRect, layer, target);
+          });
+        });
+      }
+
+      function renderCrispTextElement(element, rootRect, layer, target) {
+        if (!element || element.offsetParent === null) return;
+
+        const style = window.getComputedStyle(element);
+        let text = element.textContent || "";
+        if (!text.trim()) return;
+        if (target.uppercase || style.textTransform === "uppercase") {
+          text = text.toUpperCase();
+        }
+
+        const rect = element.getBoundingClientRect();
+        const canvas = document.createElement("canvas");
+        const width = Math.max(2, Math.ceil(rect.width) + 6);
+        const height = Math.max(2, Math.ceil(rect.height) + 6);
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.left = `${Math.round(rect.left - rootRect.left) - 2}px`;
+        canvas.style.top = `${Math.round(rect.top - rootRect.top) - 3}px`;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#000000";
+
+        const fontSize = parseFloat(style.fontSize) || 14;
+        const fontWeight = Number.parseInt(style.fontWeight, 10) || 700;
+        const fontFamily = style.fontFamily || "Arial, Helvetica, sans-serif";
+        const lineHeight = parseLineHeight(style.lineHeight, fontSize);
+        const drawX = 2 + (target.xOffset || 0);
+        const maxTextWidth = Math.max(1, width - drawX - 2);
+        const lines = getCrispTextLines(ctx, text, target, fontWeight, fontSize, fontFamily, maxTextWidth);
+
+        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+        ctx.textBaseline = "alphabetic";
+        if (target.visualCenter && lines.length === 1) {
+          drawCrispCenteredGlyph(ctx, lines[0], drawX, Math.ceil(rect.width), 3, Math.ceil(rect.height));
+        } else {
+          drawCrispLines(ctx, lines, drawX, width, height, fontSize, lineHeight, style.textAlign);
+        }
+        thresholdCanvas(ctx, width, height, 120);
+
+        element.classList.add("crisp-text-source");
+        layer.appendChild(canvas);
+      }
+
+      function getCrispTextLines(ctx, text, target, fontWeight, fontSize, fontFamily, maxWidth) {
+        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+
+        if (target.hours && text.includes(" / ")) {
+          const parts = text.split(" / ");
+          return [parts[0] + " /", parts.slice(1).join(" / ")].filter(Boolean);
+        }
+
+        const explicitLines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+        if (explicitLines.length > 1) return explicitLines;
+        if (!target.wrap || ctx.measureText(text).width <= maxWidth) return [text];
+
+        const words = text.split(/\s+/).filter(Boolean);
+        const lines = [];
+        let current = "";
+        words.forEach((word) => {
+          const next = current ? current + " " + word : word;
+          if (current && ctx.measureText(next).width > maxWidth) {
+            lines.push(current);
+            current = word;
+          } else {
+            current = next;
+          }
+        });
+        if (current) lines.push(current);
+        return lines;
+      }
+
+      function drawCrispLines(ctx, lines, x, width, height, fontSize, lineHeight, textAlign) {
+        const metrics = ctx.measureText(lines[0] || "");
+        const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+        const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+        const blockHeight = lineHeight * lines.length;
+        const firstBaseline = Math.round(
+          (height - blockHeight) / 2 + (lineHeight - ascent - descent) / 2 + ascent
+        );
+
+        lines.forEach((line, index) => {
+          let lineX = x;
+          if (textAlign === "right") {
+            lineX = Math.max(x, Math.round(width - 2 - ctx.measureText(line).width));
+          } else if (textAlign === "center") {
+            lineX = Math.max(x, Math.round((width - ctx.measureText(line).width) / 2));
+          }
+          ctx.fillText(line, lineX, firstBaseline + Math.round(index * lineHeight));
+        });
+      }
+
+      function drawCrispCenteredGlyph(ctx, text, x, width, y, height) {
+        const pad = 8;
+        const scratch = document.createElement("canvas");
+        scratch.width = width + pad * 2;
+        scratch.height = height + pad * 2;
+        const scratchCtx = scratch.getContext("2d", { willReadFrequently: true });
+        scratchCtx.font = ctx.font;
+        scratchCtx.textBaseline = "alphabetic";
+        scratchCtx.fillStyle = "#000000";
+
+        const metrics = scratchCtx.measureText(text);
+        const ascent = metrics.actualBoundingBoxAscent || height * 0.7;
+        const descent = metrics.actualBoundingBoxDescent || height * 0.2;
+        const roughX = Math.round(pad + (width - metrics.width) / 2);
+        const roughBaseline = Math.round(pad + (height + ascent - descent) / 2);
+        scratchCtx.fillText(text, roughX, roughBaseline);
+
+        const bounds = alphaBounds_(scratchCtx, scratch.width, scratch.height);
+        if (!bounds) return;
+
+        const glyphWidth = bounds.maxX - bounds.minX + 1;
+        const glyphHeight = bounds.maxY - bounds.minY + 1;
+        const targetX = Math.round(x + (width - glyphWidth) / 2 - bounds.minX);
+        const targetY = Math.round(y + (height - glyphHeight) / 2 - bounds.minY);
+        ctx.drawImage(scratch, targetX, targetY);
+      }
+
+      function alphaBounds_(ctx, width, height) {
+        const image = ctx.getImageData(0, 0, width, height);
+        const pixels = image.data;
+        let minX = width;
+        let minY = height;
+        let maxX = -1;
+        let maxY = -1;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            if (pixels[(y * width + x) * 4 + 3] > 32) {
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+        return maxX < 0 ? null : { minX, minY, maxX, maxY };
+      }
+
+      function parseLineHeight(value, fontSize) {
+        const parsed = parseFloat(value);
+        if (Number.isFinite(parsed)) return parsed;
+        return fontSize * 1.2;
+      }
+
       function updateStatusBadge(status) {
         const badge = document.querySelector(".status-label");
         if (!badge) return;
@@ -879,6 +1130,7 @@
           teaching: "Do Not Disturb",
           focus: "Do Not Disturb",
           lunch: "Back Soon",
+          campus: "On Campus",
           remote: "Remote",
           away: "Away",
           offsite: "Away",
@@ -903,24 +1155,37 @@
         const hasAwayDays = Object.prototype.hasOwnProperty.call(status, "away_days");
         const awayDays = normalizeAwayDays(status.away_days);
         const shouldShow = hasAwayDays && awayDays.length > 0;
+        const labelEl = strip.querySelector(".week-strip-label");
         if (!shouldShow) {
           strip.style.display = "none";
+          strip.classList.remove("all-week");
+          if (labelEl) labelEl.textContent = "Away This Week";
           daysEl.innerHTML = "";
           return;
         }
 
         const dayLabels = {
-          mon: "Mon",
-          tue: "Tue",
-          wed: "Wed",
-          thu: "Thu",
-          fri: "Fri"
+          mon: "M",
+          tue: "T",
+          wed: "W",
+          thu: "T",
+          fri: "F"
         };
-        daysEl.innerHTML = awayDays.map((day) => {
-          const label = dayLabels[day] || day;
+        const weekdays = ["mon", "tue", "wed", "thu", "fri"];
+        const awaySet = new Set(awayDays);
+        const allWeekAway = weekdays.every((day) => awaySet.has(day));
+        strip.classList.remove("all-week");
+        if (labelEl) {
+          labelEl.textContent = allWeekAway ? "Away All Week" : "Away This Week";
+        }
+
+        daysEl.innerHTML = weekdays.map((day) => {
+          const label = dayLabels[day];
+          const isAway = awaySet.has(day);
           return `
-            <div class="week-day away" aria-label="${label} away">
+            <div class="week-day${isAway ? " away" : ""}" aria-label="${label}${isAway ? " away" : ""}">
               <span class="day">${label}</span>
+              ${isAway ? '<span class="slash" aria-hidden="true"></span>' : ""}
             </div>
           `;
         }).join("");
