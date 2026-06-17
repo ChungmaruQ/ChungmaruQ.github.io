@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Office Hours Live Loader</title>
+    <style>
+      html,
+      body {
+        width: 800px;
+        height: 480px;
+        margin: 0;
+        overflow: hidden;
+        background: #ffffff;
+        color: #000000;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .message {
+        position: absolute;
+        left: 24px;
+        bottom: 24px;
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="message">Loading Office Hours</div>
+    <script>
+      const manifestUrl = new URL("live-manifest.json", window.location.href);
+      manifestUrl.searchParams.set("_", Date.now().toString());
+
+      function buildTarget(manifest) {
+        const target = new URL(
+          manifest.htmlUrl || manifest.path || "office-hours-gauge.html",
+          window.location.href
+        );
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.forEach((value, key) => {
+          if (!target.searchParams.has(key)) target.searchParams.set(key, value);
+        });
+        target.searchParams.set("v", manifest.version || Date.now().toString());
+        return target.toString();
+      }
+
+      function goFallback() {
+        const target = new URL("office-hours-gauge.html", window.location.href);
+        target.searchParams.set("v", Date.now().toString());
+        window.location.replace(target.toString());
+      }
+
+      fetch(manifestUrl.toString(), { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("Manifest fetch failed");
+          return response.json();
+        })
+        .then((manifest) => {
+          window.location.replace(buildTarget(manifest || {}));
+        })
+        .catch(goFallback);
+    </script>
+  </body>
+</html>
