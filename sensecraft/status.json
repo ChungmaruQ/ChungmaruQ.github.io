@@ -4,9 +4,9 @@
   "state": "off_hours",
   "status_label": "Out of Office",
   "headline": "Out of Office",
-  "detail": "Back tomorrow 09:30.",
+  "detail": "Back Jun 22, 09:30.",
   "next_available": "Jun 22, 09:30",
-  "current_until": "Tomorrow 09:30",
+  "current_until": "Jun 22, 09:30",
   "todays_hours": "09:30-12:00 / 13:00-17:00",
   "away_days": [
     "thu",
@@ -22,6 +22,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jun 17, 17:13",
+  "updated_at": "Jun 17, 17:20",
   "source": "calendar"
 }
