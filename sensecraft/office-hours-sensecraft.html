@@ -1041,7 +1041,10 @@
       }
 
       fitCanvasToViewport();
-      const cachedStatus = loadCachedStatus();
+      const embeddedStatus = isUsableStatus(window.OFFICE_HOURS_INITIAL_STATUS)
+        ? normalizeStatus(window.OFFICE_HOURS_INITIAL_STATUS)
+        : null;
+      const cachedStatus = embeddedStatus || loadCachedStatus();
       applyStatus(cachedStatus || fallbackStatus);
       hasLoadedStatus = Boolean(cachedStatus);
       loadStatus();

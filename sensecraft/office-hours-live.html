@@ -6,63 +6,1091 @@
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Office Hours Live Loader</title>
+    <title>Office Hours Door Display</title>
     <style>
+      :root {
+        --bg: #ffffff;
+        --panel: #ffffff;
+        --ink: #000000;
+        --muted: #000000;
+        --line: #000000;
+        --accent: #0000ff;
+        --accent-soft: #ffffff;
+        --accent-ink: #000000;
+        --office: #00ff00;
+        --away: #ff0000;
+        --focus: #0000ff;
+        --remote: #0000ff;
+        --sun: #ffff00;
+        --sky: #0000ff;
+        --leaf: #00ff00;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       html,
       body {
         width: 800px;
         height: 480px;
         margin: 0;
         overflow: hidden;
-        background: #ffffff;
-        color: #000000;
+        background: var(--bg);
+        color: var(--ink);
         font-family: Arial, Helvetica, sans-serif;
+        font-synthesis: none;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeSpeed;
       }
 
-      .message {
-        position: absolute;
-        left: 24px;
-        bottom: 24px;
-        font-size: 18px;
-        font-weight: 700;
+      .canvas {
+        position: relative;
+        width: 800px;
+        height: 480px;
+        overflow: hidden;
+        background: var(--bg);
+        transform: scale(var(--scale, 1));
+        transform-origin: top left;
+      }
+
+      .label {
+        color: var(--muted);
+        font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1;
         text-transform: uppercase;
+      }
+
+      .top {
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 68px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .top::before {
+        display: none;
+      }
+
+      .brand {
+        position: absolute;
+        left: 22px;
+        top: 14px;
+      }
+
+      .name-line {
+        margin-top: 7px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 548px;
+      }
+
+      .name {
+        min-width: 0;
+        max-width: 470px;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .battery-gauge {
+        display: none;
+        position: relative;
+        flex: 0 0 auto;
+        align-items: center;
+        width: 44px;
+        height: 18px;
+        border: 2px solid var(--muted);
+        border-radius: 4px;
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .battery-gauge::after {
+        content: "";
+        position: absolute;
+        right: -6px;
+        top: 4px;
+        width: 4px;
+        height: 8px;
+        border-radius: 0 3px 3px 0;
+        background: var(--muted);
+      }
+
+      .battery-fill {
+        position: absolute;
+        left: 4px;
+        top: 3px;
+        bottom: 3px;
+        width: 0%;
+        border-radius: 2px;
+        background: var(--battery-color, var(--leaf));
+      }
+
+      .battery-text {
+        display: none;
+      }
+
+      .date-block {
+        position: absolute;
+        right: 24px;
+        top: 14px;
+        width: 210px;
+        text-align: right;
+      }
+
+      .date {
+        margin-top: 6px;
+        color: var(--ink);
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .status-dot {
+        position: absolute;
+        left: 22px;
+        top: 175px;
+        display: grid;
+        place-items: center;
+        width: 82px;
+        height: 82px;
+        border: 7px solid var(--line);
+        border-radius: 50%;
+        background: var(--accent-soft);
+        box-shadow: none;
+      }
+
+      .status-dot::before {
+        content: "";
+        position: absolute;
+        inset: 15px;
+        border: 6px solid var(--line);
+        border-radius: 50%;
+      }
+
+      .status-dot::after {
+        content: "";
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--accent);
+        box-sizing: border-box;
+      }
+
+      .status {
+        position: absolute;
+        left: 126px;
+        top: 158px;
+        width: 430px;
+      }
+
+      .status-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        height: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1;
+        text-align: left;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .status-label::before {
+        content: "";
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--ink);
+        background: var(--accent);
+      }
+
+      .status-label.emphasis-badge {
+        min-width: 0;
+        font-size: 18px;
+      }
+
+      .headline-shell {
+        margin-top: 8px;
+        width: 430px;
+        height: 68px;
+        overflow: hidden;
+      }
+
+      .headline-bitmap {
+        display: block;
+        width: 430px;
+        height: 68px;
+        image-rendering: pixelated;
+      }
+
+      .headline {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        border: 0;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 52px;
+        font-weight: 800;
+        line-height: 0.98;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      .detail {
+        margin-top: 12px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 21px;
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+
+      .week-strip {
+        display: none;
+        position: absolute;
+        left: 18px;
+        top: 204px;
+        width: 130px;
+      }
+
+      .week-strip-label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .week-days {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .week-day {
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+        width: 56px;
+        height: 30px;
+        border: 2px solid var(--ink);
+        border-left-width: 6px;
+        border-radius: 0;
+        background: var(--panel);
+        color: var(--ink);
+        text-align: center;
+        box-shadow: none;
+      }
+
+      .week-day .day {
+        display: block;
+        position: relative;
+        z-index: 2;
+        padding: 0 4px;
+        background: var(--panel);
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .week-day .mark {
+        display: none;
+      }
+
+      .week-day .slash {
+        display: none;
+      }
+
+      .week-day.away {
+        border-color: var(--ink);
+        border-left-color: var(--away);
+        background: var(--panel);
+        color: var(--ink);
+        box-shadow: none;
+      }
+
+      .week-day.away .slash {
+        display: block;
+        position: absolute;
+        z-index: 1;
+        left: -7px;
+        top: 16px;
+        width: 82px;
+        height: 5px;
+        border-radius: 0;
+        border: 0;
+        background: var(--away);
+        box-shadow: none;
+        transform: rotate(-30deg);
+        pointer-events: none;
+      }
+
+      .next {
+        position: absolute;
+        left: 624px;
+        top: 86px;
+        width: 152px;
+        height: 260px;
+        border-left: 1px solid var(--line);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .next .label {
+        position: absolute;
+        left: 18px;
+        top: 107px;
+        width: 130px;
+        color: var(--muted);
+        font-size: 15px;
+        letter-spacing: 0;
+        visibility: hidden;
+      }
+
+      .next-label-bitmap {
+        position: absolute;
+        left: 18px;
+        top: 107px;
+        display: block;
+        width: 130px;
+        height: 20px;
+        image-rendering: pixelated;
+      }
+
+      .next-time {
+        position: absolute;
+        left: 18px;
+        top: 134px;
+        width: 130px;
+        max-height: 104px;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.02;
+        white-space: normal;
+      }
+
+      .bottom {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 800px;
+        height: 116px;
+        border-top: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .bottom::before {
+        display: none;
+      }
+
+      .hours {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 230px;
+        height: 116px;
+        padding: 17px 20px;
+        overflow: hidden;
+        border-top: 0;
+        background: transparent;
+        border-right: 1px solid var(--line);
+      }
+
+      .hours .label {
+        color: var(--muted);
+      }
+
+      .hours-value {
+        margin-top: 9px;
+        color: var(--ink);
+        font-size: 25px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+
+      .agenda {
+        position: absolute;
+        left: 250px;
+        right: 20px;
+        bottom: 20px;
+        height: 70px;
+      }
+
+      .agenda-label {
+        position: absolute;
+        left: 250px;
+        bottom: 84px;
+        z-index: 2;
+        width: 180px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .agenda-item {
+        position: absolute;
+        top: 20px;
+        width: 230px;
+        height: 50px;
+        overflow: hidden;
+        padding: 1px 12px 4px 17px;
+        border: 0;
+        border-left: 5px solid var(--accent);
+        border-radius: 0;
+        background: transparent;
+      }
+
+      .agenda-item.second {
+        left: 270px;
+        border-left-color: var(--office);
+      }
+
+      .agenda-time {
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+
+      .agenda-title {
+        margin-top: 4px;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.1;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .quote-card {
+        display: none;
+        position: absolute;
+        left: 250px;
+        right: 50px;
+        bottom: 18px;
+        height: 52px;
+        overflow: hidden;
+        padding: 0 0 4px 17px;
+        border-left: 5px solid var(--accent);
+        background: transparent;
+      }
+
+      .quote-en {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 21px;
+        font-weight: 800;
+        line-height: 1.15;
+        white-space: nowrap;
+      }
+
+      .quote-author {
+        margin-top: 9px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.15;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .updated {
+        position: absolute;
+        right: 22px;
+        bottom: 8px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 600;
       }
     </style>
   </head>
   <body>
-    <div class="message">Loading Office Hours</div>
+    <main class="canvas">
+      <section class="top">
+        <div class="brand">
+          <div class="label">Office Hours</div>
+          <div class="name-line">
+            <div class="name" data-field="display_name">Prof. Hyunwoo Kim</div>
+            <div class="battery-gauge" aria-label="Battery level">
+              <div class="battery-fill" aria-hidden="true"></div>
+              <div class="battery-text" data-field="battery_level"></div>
+            </div>
+          </div>
+        </div>
+        <div class="date-block">
+          <div class="label">Today</div>
+          <div class="date" data-field="date"></div>
+        </div>
+      </section>
+
+      <div class="status-dot" aria-hidden="true"></div>
+
+      <section class="status">
+        <div class="status-label" data-field="status_label">Loading</div>
+        <div class="headline-shell">
+          <canvas class="headline-bitmap" width="430" height="68" aria-hidden="true"></canvas>
+          <div class="headline" data-field="headline">Checking</div>
+        </div>
+        <div class="detail" data-field="detail">Updating status.</div>
+      </section>
+
+      <section class="next">
+        <div class="label">Next Available</div>
+        <canvas class="next-label-bitmap" width="130" height="20" aria-hidden="true"></canvas>
+        <div class="next-time" data-field="next_available"></div>
+        <div class="week-strip" aria-label="Away days this week">
+          <div class="week-strip-label">Away This Week</div>
+          <div class="week-days"></div>
+        </div>
+      </section>
+
+      <section class="bottom">
+        <div class="hours">
+          <div class="label">Office Hours</div>
+          <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-17:00</div>
+        </div>
+        <div class="agenda-label label">Up Next</div>
+        <div class="agenda">
+          <div class="agenda-item">
+            <div class="agenda-time" data-field="up_next_1_time"></div>
+            <div class="agenda-title" data-field="up_next_1_title"></div>
+          </div>
+          <div class="agenda-item second">
+            <div class="agenda-time" data-field="up_next_2_time"></div>
+            <div class="agenda-title" data-field="up_next_2_title"></div>
+          </div>
+        </div>
+        <div class="quote-card" aria-label="Today's thought">
+          <div class="quote-en"></div>
+          <div class="quote-author"></div>
+        </div>
+      </section>
+
+      <div class="updated">Updated <span data-field="updated_at"></span></div>
+    </main>
+
+    <script id="office-hours-initial-status" type="application/json">
+{
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Wed, Jun 17",
+  "state": "focus",
+  "status_label": "Do Not Disturb",
+  "headline": "Focus Time",
+  "detail": "Please do not disturb.",
+  "next_available": "14:00",
+  "current_until": "12:00",
+  "todays_hours": "09:30-12:00 / 13:00-17:00",
+  "away_days": [
+    "thu",
+    "fri"
+  ],
+  "battery_level": "96%",
+  "up_next_1_time": "12:00-14:00",
+  "up_next_1_title": "In Class",
+  "up_next_1_type": "teaching",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
+  "up_next_3_time": "",
+  "up_next_3_title": "",
+  "up_next_3_type": "",
+  "updated_at": "Jun 17, 11:54",
+  "source": "calendar"
+}
+    </script>
     <script>
-      const manifestUrl = new URL("live-manifest.json", window.location.href);
-      manifestUrl.searchParams.set("_", Date.now().toString());
-
-      function buildTarget(manifest) {
-        const target = new URL(
-          manifest.htmlUrl || manifest.path || "office-hours-gauge.html",
-          window.location.href
+      try {
+        window.OFFICE_HOURS_INITIAL_STATUS = JSON.parse(
+          document.getElementById("office-hours-initial-status").textContent || "{}"
         );
-        const currentParams = new URLSearchParams(window.location.search);
-        currentParams.forEach((value, key) => {
-          if (!target.searchParams.has(key)) target.searchParams.set(key, value);
+      } catch (error) {
+        window.OFFICE_HOURS_INITIAL_STATUS = {};
+      }
+    </script>
+
+    <script>
+      const fallbackStatus = {
+        display_name: "Prof. Hyunwoo Kim",
+        date: "",
+        state: "setup",
+        status_label: "Loading",
+        headline: "Checking",
+        detail: "Updating status.",
+        next_available: "",
+        todays_hours: "09:30-12:00 / 13:00-17:00",
+        battery_level: "",
+        away_days: [],
+        up_next_1_time: "",
+        up_next_1_title: "",
+        up_next_2_time: "",
+        up_next_2_title: "",
+        updated_at: ""
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const refreshMs = 60 * 1000;
+      const defaultDataUrl = getDefaultDataUrl();
+      const dataUrl =
+        params.get("data") ||
+        window.OFFICE_HOURS_DATA_URL ||
+        defaultDataUrl;
+      const statusStorageKey = `office-hours:last-status:${dataUrl}`;
+      let hasLoadedStatus = false;
+
+      function getDefaultDataUrl() {
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          return new URL("status.json", window.location.href).toString();
+        }
+        return "https://chungmaruq.github.io/sensecraft/status.json";
+      }
+
+      function fitCanvasToViewport() {
+        const width = window.innerWidth || 800;
+        const height = window.innerHeight || 480;
+        const scale = Math.min(1, width / 800, height / 480);
+        document.documentElement.style.setProperty("--scale", String(scale || 1));
+      }
+
+      function withCacheBust(url) {
+        const nextUrl = new URL(url, window.location.href);
+        nextUrl.searchParams.set("_", Date.now().toString());
+        return nextUrl.toString();
+      }
+
+      function normalizeStatus(status) {
+        return { ...fallbackStatus, ...(status || {}) };
+      }
+
+      function isUsableStatus(status) {
+        return Boolean(
+          status &&
+          typeof status === "object" &&
+          !Array.isArray(status) &&
+          (status.state || status.headline || status.updated_at)
+        );
+      }
+
+      function loadCachedStatus() {
+        try {
+          const raw = window.localStorage?.getItem(statusStorageKey);
+          if (!raw) return null;
+          const cached = JSON.parse(raw);
+          return isUsableStatus(cached) ? normalizeStatus(cached) : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function saveCachedStatus(status) {
+        try {
+          window.localStorage?.setItem(
+            statusStorageKey,
+            JSON.stringify({ ...status, cached_at: new Date().toISOString() })
+          );
+        } catch (error) {
+          // Storage may be unavailable in some embedded previews.
+        }
+      }
+
+      function applyStatus(status) {
+        document.querySelectorAll("[data-field]").forEach((element) => {
+          const field = element.getAttribute("data-field");
+          element.textContent = status[field] ?? "";
         });
-        target.searchParams.set("v", manifest.version || Date.now().toString());
-        return target.toString();
+
+        updateNextCard(status);
+        updateStatusBadge(status);
+        updateAgendaVisibility();
+        updateBatteryVisibility();
+        updateWeekStrip(status);
+        fitDynamicText();
+        renderBitmapHeadline(status.headline || "");
+
+        const state = status.state || "";
+        const root = document.documentElement;
+        if (state === "available") {
+          root.style.setProperty("--accent", "#00ff00");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else if (state === "away" || state === "leave" || state === "offsite") {
+          root.style.setProperty("--accent", "#ff0000");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else if (state === "busy" || state === "meeting" || state === "teaching" || state === "focus") {
+          root.style.setProperty("--accent", "#0000ff");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else if (state === "lunch") {
+          root.style.setProperty("--accent", "#ffff00");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else if (state === "remote") {
+          root.style.setProperty("--accent", "#0000ff");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else if (state === "off_hours" || state === "closed") {
+          root.style.setProperty("--accent", "#000000");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        } else {
+          root.style.setProperty("--accent", "#000000");
+          root.style.setProperty("--accent-soft", "#ffffff");
+        }
       }
 
-      function goFallback() {
-        const target = new URL("office-hours-gauge.html", window.location.href);
-        target.searchParams.set("v", Date.now().toString());
-        window.location.replace(target.toString());
+      function fitDynamicText() {
+        fitTextToWidth(".name", 30, 24);
+        fitTextToWidth(".detail", 20, 16);
+        fitTextToWidth(".next-time", 30, 18);
+        fitTextToWidth(".hours-value", 24, 18);
+        fitTextToWidth(".agenda-time", 15, 11);
+        fitTextToWidth(".agenda-title", 20, 14);
+        fitTextToWidth(".quote-en", 21, 17);
+        fitTextToWidth(".quote-author", 13, 11);
       }
 
-      fetch(manifestUrl.toString(), { cache: "no-store" })
-        .then((response) => {
-          if (!response.ok) throw new Error("Manifest fetch failed");
-          return response.json();
-        })
-        .then((manifest) => {
-          window.location.replace(buildTarget(manifest || {}));
-        })
-        .catch(goFallback);
+      function renderBitmapHeadline(text) {
+        const canvas = document.querySelector(".headline-bitmap");
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+
+        let size = 52;
+        while (size > 36) {
+          ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
+          if (ctx.measureText(text).width <= width) break;
+          size -= 1;
+        }
+
+        ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#000000";
+
+        const metrics = ctx.measureText(text);
+        const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
+        const descent = metrics.actualBoundingBoxDescent || size * 0.2;
+        const y = Math.round((height - ascent - descent) / 2 + ascent);
+        ctx.fillText(text, 0, y);
+
+        thresholdCanvas(ctx, width, height, 120);
+      }
+
+      function thresholdCanvas(ctx, width, height, alphaThreshold) {
+        const image = ctx.getImageData(0, 0, width, height);
+        const pixels = image.data;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] > alphaThreshold) {
+            pixels[i] = 0;
+            pixels[i + 1] = 0;
+            pixels[i + 2] = 0;
+            pixels[i + 3] = 255;
+          } else {
+            pixels[i + 3] = 0;
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+      }
+
+      function updateNextCard(status) {
+        const label = document.querySelector(".next .label");
+        const value = document.querySelector("[data-field='next_available']");
+        if (!label || !value) return;
+
+        if (status.state === "available") {
+          label.textContent = "Available Until";
+          value.textContent = status.current_until || "Now";
+          renderBitmapLabel(".next-label-bitmap", label.textContent, 130, 20, 14, 12);
+          return;
+        }
+
+        label.textContent = "Next Available";
+        value.textContent = status.next_available || "";
+        renderBitmapLabel(".next-label-bitmap", label.textContent, 130, 20, 14, 12);
+      }
+
+      function renderBitmapLabel(selector, text, width, height, maxSize, minSize) {
+        const canvas = document.querySelector(selector);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.clearRect(0, 0, width, height);
+
+        let size = maxSize;
+        const normalized = String(text || "").toUpperCase();
+        while (size > minSize) {
+          ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
+          if (ctx.measureText(normalized).width <= width) break;
+          size -= 1;
+        }
+
+        ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#000000";
+        const metrics = ctx.measureText(normalized);
+        const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
+        const descent = metrics.actualBoundingBoxDescent || size * 0.2;
+        const y = Math.round((height - ascent - descent) / 2 + ascent);
+        ctx.fillText(normalized, 0, y);
+        thresholdCanvas(ctx, width, height, 120);
+      }
+
+      function updateStatusBadge(status) {
+        const badge = document.querySelector(".status-label");
+        if (!badge) return;
+
+        const state = status.state || "";
+        const badgeLabels = {
+          available: "Visits OK",
+          busy: "Do Not Disturb",
+          meeting: "Do Not Disturb",
+          teaching: "Do Not Disturb",
+          focus: "Do Not Disturb",
+          lunch: "Back Soon",
+          remote: "Remote",
+          away: "Away",
+          offsite: "Away",
+          leave: "Away",
+          off_hours: "Away",
+          closed: "Closed",
+          setup: "Setup"
+        };
+
+        badge.textContent = badgeLabels[state] || status.status_label || "Status";
+        badge.classList.toggle(
+          "emphasis-badge",
+          ["away", "offsite", "leave", "off_hours", "closed"].includes(state)
+        );
+      }
+
+      function updateWeekStrip(status) {
+        const strip = document.querySelector(".week-strip");
+        const daysEl = document.querySelector(".week-days");
+        if (!strip || !daysEl) return;
+
+        const hasAwayDays = Object.prototype.hasOwnProperty.call(status, "away_days");
+        const awayDays = normalizeAwayDays(status.away_days);
+        const shouldShow = hasAwayDays && awayDays.length > 0;
+        if (!shouldShow) {
+          strip.style.display = "none";
+          daysEl.innerHTML = "";
+          return;
+        }
+
+        const dayLabels = {
+          mon: "Mon",
+          tue: "Tue",
+          wed: "Wed",
+          thu: "Thu",
+          fri: "Fri"
+        };
+        daysEl.innerHTML = awayDays.map((day) => {
+          const label = dayLabels[day] || day;
+          return `
+            <div class="week-day away" aria-label="${label} away">
+              <span class="day">${label}</span>
+            </div>
+          `;
+        }).join("");
+        strip.style.display = "block";
+      }
+
+      function normalizeAwayDays(value) {
+        if (Array.isArray(value)) {
+          return value.map(normalizeDayLabel).filter(Boolean);
+        }
+        return String(value || "")
+          .split(",")
+          .map(normalizeDayLabel)
+          .filter(Boolean);
+      }
+
+      function normalizeDayLabel(value) {
+        const text = String(value || "").trim().toLowerCase();
+        const aliases = {
+          m: "mon",
+          monday: "mon",
+          mon: "mon",
+          tuesday: "tue",
+          tue: "tue",
+          wednesday: "wed",
+          wed: "wed",
+          thursday: "thu",
+          thu: "thu",
+          friday: "fri",
+          fri: "fri"
+        };
+        return aliases[text] || "";
+      }
+
+      function fitTextToWidth(selector, maxPx, minPx) {
+        document.querySelectorAll(selector).forEach((element) => {
+          element.style.fontSize = `${maxPx}px`;
+          if (element.offsetParent === null) return;
+
+          let size = maxPx;
+          while (size > minPx && element.scrollWidth > element.clientWidth) {
+            size -= 1;
+            element.style.fontSize = `${size}px`;
+          }
+        });
+      }
+
+      function updateAgendaVisibility() {
+        const items = document.querySelectorAll(".agenda-item");
+        const quote = document.querySelector(".quote-card");
+        let visibleCount = 0;
+        items.forEach((item) => {
+          const hasContent = item.textContent.trim().length > 0;
+          item.style.display = hasContent ? "block" : "none";
+          if (hasContent) visibleCount += 1;
+        });
+
+        const label = document.querySelector(".agenda-label");
+        if (label) {
+          label.textContent = visibleCount > 0 ? "Up Next" : "Today's Thought";
+          label.style.display = "block";
+        }
+
+        if (quote) {
+          quote.style.display = visibleCount > 0 ? "none" : "block";
+          if (visibleCount === 0) {
+            renderQuote();
+          }
+        }
+      }
+
+      function renderQuote() {
+        const quotes = [
+          {
+            text: "Well begun is half done.",
+            author: "Aristotle"
+          },
+          {
+            text: "No great thing is created suddenly.",
+            author: "Epictetus"
+          },
+          {
+            text: "Know thyself.",
+            author: "Socrates"
+          },
+          {
+            text: "Fortune favors the bold.",
+            author: "Virgil"
+          },
+          {
+            text: "Make haste slowly.",
+            author: "Augustus"
+          }
+        ];
+        const dateSeed =
+          document.querySelector("[data-field='date']")?.textContent ||
+          document.querySelector("[data-field='updated_at']")?.textContent ||
+          new Date().toDateString();
+        const index = hashText(dateSeed) % quotes.length;
+        const quote = quotes[index];
+        document.querySelector(".quote-en").textContent = quote.text;
+        document.querySelector(".quote-author").textContent = quote.author;
+      }
+
+      function hashText(value) {
+        return Array.from(String(value)).reduce((hash, char) => {
+          return (hash * 31 + char.charCodeAt(0)) >>> 0;
+        }, 7);
+      }
+
+      function updateBatteryVisibility() {
+        const gauge = document.querySelector(".battery-gauge");
+        const fill = document.querySelector(".battery-fill");
+        const text = document.querySelector(".battery-text");
+        if (!gauge || !fill || !text) return;
+
+        const rawValue = text.textContent.trim();
+        if (!rawValue) {
+          gauge.style.display = "none";
+          fill.style.width = "0px";
+          return;
+        }
+
+        const numeric = Number(rawValue.replace("%", ""));
+        const percent = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
+        gauge.style.display = "flex";
+        gauge.setAttribute("aria-label", `Battery ${percent}%`);
+        fill.style.width = `calc((100% - 8px) * ${percent / 100})`;
+        fill.style.background = batteryColor(percent);
+      }
+
+      function batteryColor(percent) {
+        if (percent < 30) return "#ff0000";
+        if (percent < 60) return "#ffff00";
+        return "#00ff00";
+      }
+
+      async function loadStatus() {
+        if (!dataUrl) {
+          if (!hasLoadedStatus) applyStatus(fallbackStatus);
+          return;
+        }
+
+        try {
+          const response = await fetch(withCacheBust(dataUrl), { cache: "no-store" });
+          if (!response.ok) throw new Error("Status fetch failed");
+          const status = await response.json();
+          if (!isUsableStatus(status)) throw new Error("Status JSON is empty");
+          const normalizedStatus = normalizeStatus(status);
+          applyStatus(normalizedStatus);
+          saveCachedStatus(normalizedStatus);
+          hasLoadedStatus = true;
+        } catch (error) {
+          const cachedStatus = loadCachedStatus();
+          if (cachedStatus) {
+            applyStatus(cachedStatus);
+            hasLoadedStatus = true;
+          } else if (!hasLoadedStatus) {
+            applyStatus(fallbackStatus);
+          }
+        }
+      }
+
+      fitCanvasToViewport();
+      const embeddedStatus = isUsableStatus(window.OFFICE_HOURS_INITIAL_STATUS)
+        ? normalizeStatus(window.OFFICE_HOURS_INITIAL_STATUS)
+        : null;
+      const cachedStatus = embeddedStatus || loadCachedStatus();
+      applyStatus(cachedStatus || fallbackStatus);
+      hasLoadedStatus = Boolean(cachedStatus);
+      loadStatus();
+      window.addEventListener("resize", fitCanvasToViewport);
+      if (dataUrl) {
+        setInterval(loadStatus, refreshMs);
+      }
     </script>
   </body>
 </html>
