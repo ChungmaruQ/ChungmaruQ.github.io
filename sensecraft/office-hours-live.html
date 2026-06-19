@@ -54,6 +54,15 @@
         transform-origin: top left;
       }
 
+      .canvas::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        box-shadow: inset 0 0 0 4px var(--accent);
+        pointer-events: none;
+      }
+
       .label {
         color: var(--muted);
         font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
@@ -79,6 +88,16 @@
         position: absolute;
         left: 22px;
         top: 14px;
+      }
+
+      .brand .updated {
+        overflow: hidden;
+        color: var(--muted);
+        font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
       }
 
       .name-line {
@@ -481,7 +500,7 @@
       .agenda {
         position: absolute;
         left: 250px;
-        right: 20px;
+        right: 130px;
         bottom: 20px;
         height: 70px;
       }
@@ -499,7 +518,7 @@
       .agenda-item {
         position: absolute;
         top: 20px;
-        width: 230px;
+        width: 205px;
         height: 50px;
         overflow: hidden;
         padding: 1px 12px 4px 17px;
@@ -510,7 +529,8 @@
       }
 
       .agenda-item.second {
-        left: 270px;
+        left: 220px;
+        width: 165px;
         border-left-color: var(--office);
       }
 
@@ -539,7 +559,7 @@
         display: none;
         position: absolute;
         left: 250px;
-        right: 50px;
+        right: 140px;
         bottom: 18px;
         height: 52px;
         overflow: hidden;
@@ -569,14 +589,51 @@
         white-space: nowrap;
       }
 
-      .updated {
+      .lab-card {
+        display: none;
         position: absolute;
-        right: 22px;
-        bottom: 8px;
+        left: 250px;
+        right: 140px;
+        bottom: 18px;
+        height: 52px;
+        overflow: hidden;
+        padding: 0 0 4px 17px;
+        border-left: 5px solid var(--office);
+        background: transparent;
+      }
+
+      .lab-copy-title {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.15;
+        white-space: nowrap;
+      }
+
+      .lab-copy-detail {
+        margin-top: 8px;
+        overflow: hidden;
         color: var(--muted);
         font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 700;
+        line-height: 1.15;
+        white-space: nowrap;
+      }
+
+      .lab-qr {
+        position: absolute;
+        right: 14px;
+        bottom: 6px;
+        width: 104px;
+        height: 104px;
+        box-sizing: border-box;
+        background: #ffffff;
+        border: 2px solid #000000;
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: grayscale(1) contrast(500%);
       }
 
       .crisp-text-layer {
@@ -602,7 +659,7 @@
     <main class="canvas">
       <section class="top">
         <div class="brand">
-          <div class="label">Office Hours</div>
+          <div class="updated">Updated <span data-field="updated_at"></span></div>
           <div class="name-line">
             <div class="name" data-field="display_name">Prof. Hyunwoo Kim</div>
             <div class="battery-gauge" aria-label="Battery level">
@@ -641,7 +698,7 @@
       <section class="bottom">
         <div class="hours">
           <div class="label">Office Hours</div>
-          <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-17:00</div>
+          <div class="hours-value" data-field="todays_hours">09:30-12:00 / 13:00-18:00</div>
         </div>
         <div class="agenda-label label">Up Next</div>
         <div class="agenda">
@@ -658,9 +715,12 @@
           <div class="quote-en"></div>
           <div class="quote-author"></div>
         </div>
+        <div class="lab-card" aria-label="Lab website">
+          <div class="lab-copy-title">Scan for research & contact</div>
+          <div class="lab-copy-detail">Publications, projects, and office info</div>
+        </div>
+        <img class="lab-qr" src="lab-qr.png" alt="Lab website QR code" />
       </section>
-
-      <div class="updated">Updated <span data-field="updated_at"></span></div>
     </main>
 
     <script id="office-hours-initial-status" type="application/json">
@@ -711,7 +771,7 @@
         headline: "Checking",
         detail: "Updating status.",
         next_available: "",
-        todays_hours: "09:30-12:00 / 13:00-17:00",
+        todays_hours: "09:30-12:00 / 13:00-18:00",
         battery_level: "",
         away_days: [],
         up_next_1_time: "",
@@ -838,6 +898,8 @@
         fitTextToWidth(".agenda-title", 20, 14);
         fitTextToWidth(".quote-en", 21, 17);
         fitTextToWidth(".quote-author", 14, 12);
+        fitTextToWidth(".lab-copy-title", 20, 16);
+        fitTextToWidth(".lab-copy-detail", 14, 12);
       }
 
       function renderBitmapHeadline(text) {
@@ -945,7 +1007,7 @@
         root.appendChild(layer);
 
         [
-          { selector: ".brand > .label", uppercase: true },
+          { selector: ".brand > .updated" },
           { selector: ".name" },
           { selector: ".date-block > .label", uppercase: true },
           { selector: ".date" },
@@ -962,6 +1024,8 @@
           { selector: ".agenda-title" },
           { selector: ".quote-en" },
           { selector: ".quote-author", uppercase: true },
+          { selector: ".lab-copy-title" },
+          { selector: ".lab-copy-detail" },
           { selector: ".updated" }
         ].forEach((target) => {
           document.querySelectorAll(target.selector).forEach((element) => {
@@ -1236,6 +1300,7 @@
       function updateAgendaVisibility() {
         const items = document.querySelectorAll(".agenda-item");
         const quote = document.querySelector(".quote-card");
+        const lab = document.querySelector(".lab-card");
         let visibleCount = 0;
         items.forEach((item) => {
           const hasContent = item.textContent.trim().length > 0;
@@ -1245,15 +1310,19 @@
 
         const label = document.querySelector(".agenda-label");
         if (label) {
-          label.textContent = visibleCount > 0 ? "Up Next" : "Today's Thought";
+          label.textContent = visibleCount > 0 ? "Up Next" : "Lab Website";
           label.style.display = "block";
         }
 
         if (quote) {
-          quote.style.display = visibleCount > 0 ? "none" : "block";
+          quote.style.display = "none";
           if (visibleCount === 0) {
             renderQuote();
           }
+        }
+
+        if (lab) {
+          lab.style.display = visibleCount > 0 ? "none" : "block";
         }
       }
 
