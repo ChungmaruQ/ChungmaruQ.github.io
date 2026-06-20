@@ -210,13 +210,13 @@
         position: absolute;
         left: 126px;
         top: 158px;
-        width: 430px;
+        width: 480px;
       }
 
       .status-label {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         min-width: 0;
         height: auto;
         padding: 0;
@@ -225,7 +225,7 @@
         background: transparent;
         color: var(--ink);
         font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 700;
         line-height: 1;
         text-align: left;
@@ -236,28 +236,28 @@
       .status-label::before {
         content: "";
         flex: 0 0 auto;
-        width: 14px;
-        height: 14px;
+        width: 18px;
+        height: 18px;
         border: 2px solid var(--ink);
         background: var(--accent);
       }
 
       .status-label.emphasis-badge {
         min-width: 0;
-        font-size: 18px;
+        font-size: 22px;
       }
 
       .headline-shell {
-        margin-top: 8px;
-        width: 430px;
-        height: 68px;
+        margin-top: 10px;
+        width: 480px;
+        height: 82px;
         overflow: hidden;
       }
 
       .headline-bitmap {
         display: block;
-        width: 430px;
-        height: 68px;
+        width: 480px;
+        height: 82px;
         image-rendering: pixelated;
       }
 
@@ -270,7 +270,7 @@
         border: 0;
         overflow: hidden;
         color: var(--ink);
-        font-size: 52px;
+        font-size: 64px;
         font-weight: 800;
         line-height: 0.98;
         clip: rect(0 0 0 0);
@@ -679,7 +679,7 @@
       <section class="status">
         <div class="status-label" data-field="status_label">Loading</div>
         <div class="headline-shell">
-          <canvas class="headline-bitmap" width="430" height="68" aria-hidden="true"></canvas>
+          <canvas class="headline-bitmap" width="480" height="82" aria-hidden="true"></canvas>
           <div class="headline" data-field="headline">Checking</div>
         </div>
         <div class="detail" data-field="detail">Updating status.</div>
@@ -822,23 +822,23 @@
 
         if (state === "available") {
           next.state = "available";
-          next.status_label = "In Office";
+          next.status_label = "VISITS OK";
           next.headline = "In Office";
-          next.detail = next.detail === "At the office." ? "At the office." : "Visits welcome.";
+          next.detail = "Please knock.";
           return next;
         }
 
         if (state === "campus") {
           next.state = "campus";
-          next.status_label = "On Campus";
+          next.status_label = "NEARBY";
           next.headline = "On Campus";
-          next.detail = "On campus.";
+          next.detail = "Away from the office.";
           return next;
         }
 
         if (state === "lunch") {
           next.state = "lunch";
-          next.status_label = "Lunch Break";
+          next.status_label = "LUNCH";
           next.headline = "Lunch Break";
           next.detail = next.detail || "Back soon.";
           return next;
@@ -846,7 +846,7 @@
 
         if (state === "teaching") {
           next.state = "teaching";
-          next.status_label = "In Class";
+          next.status_label = "TEACHING";
           next.headline = "In Class";
           next.detail = "Class in session.";
           return next;
@@ -854,27 +854,36 @@
 
         if (["busy", "meeting", "focus"].includes(state)) {
           next.state = "meeting";
-          next.status_label = "In a Meeting";
+          next.status_label = "DO NOT DISTURB";
           next.headline = "In a Meeting";
-          next.detail = "Please do not disturb.";
+          next.detail = "Please come back later.";
           return next;
         }
 
         if (["away", "leave", "offsite", "off_hours", "closed", "remote"].includes(state)) {
+          const existingLabel = String(next.status_label || "").toUpperCase();
+          const isAfterHours = state === "off_hours" || state === "closed" || existingLabel === "AFTER HOURS";
+          const nextAvailable = String(next.next_available || "").trim();
           next.state = "away";
-          next.status_label = "Out of Office";
+          next.status_label = isAfterHours ? "AFTER HOURS" : "OFFSITE";
           next.headline = "Out of Office";
           next.detail = next.detail && next.detail.startsWith("Back ")
             ? next.detail
+            : nextAvailable && nextAvailable !== "When back at office"
+            ? `Back ${sentenceCaseTimeLabel(nextAvailable)}.`
             : "Out of office.";
           return next;
         }
 
         next.state = "away";
-        next.status_label = "Out of Office";
+        next.status_label = "OFFSITE";
         next.headline = "Out of Office";
         next.detail = "Out of office.";
         return next;
+      }
+
+      function sentenceCaseTimeLabel(value) {
+        return String(value || "").replace(/^Tomorrow\b/, "tomorrow");
       }
 
       function isUsableStatus(status) {
@@ -973,8 +982,8 @@
         const height = canvas.height;
         ctx.clearRect(0, 0, width, height);
 
-        let size = 52;
-        while (size > 36) {
+        let size = 64;
+        while (size > 40) {
           ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
           if (ctx.measureText(text).width <= width) break;
           size -= 1;
@@ -1073,7 +1082,7 @@
           { selector: ".name" },
           { selector: ".date-block > .label", uppercase: true },
           { selector: ".date" },
-          { selector: ".status-label", uppercase: true, xOffset: 22 },
+          { selector: ".status-label", uppercase: true, xOffset: 32 },
           { selector: ".detail" },
           { selector: ".next-time", wrap: true },
           { selector: ".week-strip-label", uppercase: true },
@@ -1250,20 +1259,20 @@
 
         const state = status.state || "";
         const badgeLabels = {
-          available: "In Office",
-          busy: "Meeting",
-          meeting: "Meeting",
-          teaching: "In Class",
-          focus: "Meeting",
-          lunch: "Lunch",
-          campus: "On Campus",
-          remote: "Out of Office",
-          away: "Out of Office",
-          offsite: "Out of Office",
-          leave: "Out of Office",
-          off_hours: "Out of Office",
-          closed: "Out of Office",
-          setup: "Setup"
+          available: "VISITS OK",
+          busy: "DO NOT DISTURB",
+          meeting: "DO NOT DISTURB",
+          teaching: "TEACHING",
+          focus: "DO NOT DISTURB",
+          lunch: "LUNCH",
+          campus: "NEARBY",
+          remote: "OFFSITE",
+          away: status.status_label || "OFFSITE",
+          offsite: "OFFSITE",
+          leave: "OFFSITE",
+          off_hours: "AFTER HOURS",
+          closed: "AFTER HOURS",
+          setup: "SETUP"
         };
 
         badge.textContent = badgeLabels[state] || status.status_label || "Status";
