@@ -2,9 +2,9 @@
   "display_name": "Prof. Hyunwoo Kim",
   "date": "Sat, Jun 20",
   "state": "available",
-  "status_label": "In Office",
+  "status_label": "VISITS OK",
   "headline": "In Office",
-  "detail": "At the office.",
+  "detail": "Please knock.",
   "next_available": "Jun 22, 09:30",
   "current_until": "While here",
   "todays_hours": "No hours today",
@@ -22,6 +22,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jun 20, 13:52",
+  "updated_at": "Jun 20, 14:02",
   "source": "calendar"
 }
