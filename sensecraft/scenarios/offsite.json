@@ -7,7 +7,7 @@
   "detail": "Offsite appointment.",
   "next_available": "Tomorrow 09:30",
   "current_until": "Tomorrow 09:30",
-  "todays_hours": "09:30-12:00 / 13:00-17:00",
+  "todays_hours": "09:30-12:00 / 13:00-18:00",
   "battery_level": "83%",
   "away_days": ["Mon", "Wed"],
   "up_next_1_time": "15:00-17:00",

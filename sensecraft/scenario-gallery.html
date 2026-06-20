@@ -119,18 +119,15 @@
 
     <script>
       const scenarios = [
-        { title: "Available", note: "Visitors welcome", file: "available.json", color: "#00ff00" },
-        { title: "Available + Thought", note: "No schedule to list", file: "available-quote.json", color: "#00ff00" },
-        { title: "Busy", note: "Calendar event blocks visits", file: "busy.json", color: "#0000ff" },
+        { title: "In Office", note: "Visitors welcome", file: "available.json", color: "#00ff00" },
+        { title: "In Office + Thought", note: "No schedule to list", file: "available-quote.json", color: "#00ff00" },
+        { title: "In a Meeting", note: "Calendar busy block", file: "busy.json", color: "#0000ff" },
         { title: "In a Meeting", note: "Meeting keyword/context", file: "meeting.json", color: "#0000ff" },
         { title: "In Class", note: "Class/lecture keyword", file: "teaching.json", color: "#0000ff" },
-        { title: "Focus Time", note: "Default 10:00-12:00", file: "focus.json", color: "#0000ff" },
         { title: "Lunch Break", note: "Default 12:00-13:00", file: "lunch.json", color: "#ffff00" },
         { title: "Out of Office", note: "Offsite location or trip", file: "offsite.json", color: "#000000" },
-        { title: "Geofence Away", note: "10 km+ from office", file: "geofence-away.json", color: "#ff0000" },
-        { title: "Remote", note: "Working away from office", file: "remote.json", color: "#0000ff" },
-        { title: "On Leave", note: "Vacation or day off", file: "leave.json", color: "#ff0000" },
-        { title: "After Hours", note: "Outside office hours", file: "off-hours.json", color: "#000000" },
+        { title: "Out of Office", note: "5 km+ from office", file: "geofence-away.json", color: "#ff0000" },
+        { title: "Out of Office", note: "Outside office hours", file: "off-hours.json", color: "#000000" },
         { title: "Tomorrow Event", note: "Date shown in Up Next", file: "tomorrow-class.json", color: "#00ff00" },
         { title: "Low Battery", note: "Battery alert color only", file: "low-battery.json", color: "#ff0000" },
         { title: "Setup Needed", note: "Calendar/auth issue", file: "setup.json", color: "#000000" }

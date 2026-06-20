@@ -689,8 +689,8 @@
         <div class="label">Next Available</div>
         <canvas class="next-label-bitmap" width="130" height="20" aria-hidden="true"></canvas>
         <div class="next-time" data-field="next_available"></div>
-        <div class="week-strip" aria-label="Away days this week">
-          <div class="week-strip-label">Away This Week</div>
+        <div class="week-strip" aria-label="Out of office days this week">
+          <div class="week-strip-label">Out of Office</div>
           <div class="week-days"></div>
         </div>
       </section>
@@ -777,6 +777,67 @@
         return { ...fallbackStatus, ...(status || {}) };
       }
 
+      function simplifyStatusForDisplay(status) {
+        const next = { ...status };
+        const state = next.state || "";
+
+        if (state === "available") {
+          next.state = "available";
+          next.status_label = "In Office";
+          next.headline = "In Office";
+          next.detail = next.detail === "At the office." ? "At the office." : "Visits welcome.";
+          return next;
+        }
+
+        if (state === "campus") {
+          next.state = "campus";
+          next.status_label = "On Campus";
+          next.headline = "On Campus";
+          next.detail = "On campus.";
+          return next;
+        }
+
+        if (state === "lunch") {
+          next.state = "lunch";
+          next.status_label = "Lunch Break";
+          next.headline = "Lunch Break";
+          next.detail = next.detail || "Back soon.";
+          return next;
+        }
+
+        if (state === "teaching") {
+          next.state = "teaching";
+          next.status_label = "In Class";
+          next.headline = "In Class";
+          next.detail = "Class in session.";
+          return next;
+        }
+
+        if (["busy", "meeting", "focus"].includes(state)) {
+          next.state = "meeting";
+          next.status_label = "In a Meeting";
+          next.headline = "In a Meeting";
+          next.detail = "Please do not disturb.";
+          return next;
+        }
+
+        if (["away", "leave", "offsite", "off_hours", "closed", "remote"].includes(state)) {
+          next.state = "away";
+          next.status_label = "Out of Office";
+          next.headline = "Out of Office";
+          next.detail = next.detail && next.detail.startsWith("Back ")
+            ? next.detail
+            : "Out of office.";
+          return next;
+        }
+
+        next.state = "away";
+        next.status_label = "Out of Office";
+        next.headline = "Out of Office";
+        next.detail = "Out of office.";
+        return next;
+      }
+
       function isUsableStatus(status) {
         return Boolean(
           status &&
@@ -809,6 +870,7 @@
       }
 
       function applyStatus(status) {
+        status = simplifyStatusForDisplay(status);
         document.querySelectorAll("[data-field]").forEach((element) => {
           const field = element.getAttribute("data-field");
           element.textContent = status[field] ?? "";
@@ -827,7 +889,7 @@
         if (state === "available") {
           root.style.setProperty("--accent", "#00ff00");
           root.style.setProperty("--accent-soft", "#ffffff");
-        } else if (state === "away" || state === "leave" || state === "offsite") {
+        } else if (state === "away" || state === "leave" || state === "offsite" || state === "off_hours" || state === "closed" || state === "remote") {
           root.style.setProperty("--accent", "#ff0000");
           root.style.setProperty("--accent-soft", "#ffffff");
         } else if (state === "busy" || state === "meeting" || state === "teaching" || state === "focus") {
@@ -1149,19 +1211,19 @@
 
         const state = status.state || "";
         const badgeLabels = {
-          available: "Visits OK",
-          busy: "Do Not Disturb",
-          meeting: "Do Not Disturb",
-          teaching: "Do Not Disturb",
-          focus: "Do Not Disturb",
-          lunch: "Back Soon",
+          available: "In Office",
+          busy: "Meeting",
+          meeting: "Meeting",
+          teaching: "In Class",
+          focus: "Meeting",
+          lunch: "Lunch",
           campus: "On Campus",
-          remote: "Remote",
-          away: "Away",
-          offsite: "Away",
-          leave: "Away",
-          off_hours: "Away",
-          closed: "Closed",
+          remote: "Out of Office",
+          away: "Out of Office",
+          offsite: "Out of Office",
+          leave: "Out of Office",
+          off_hours: "Out of Office",
+          closed: "Out of Office",
           setup: "Setup"
         };
 
@@ -1184,7 +1246,7 @@
         if (!shouldShow) {
           strip.style.display = "none";
           strip.classList.remove("all-week");
-          if (labelEl) labelEl.textContent = "Away This Week";
+          if (labelEl) labelEl.textContent = "Out of Office";
           daysEl.innerHTML = "";
           return;
         }
@@ -1201,7 +1263,7 @@
         const allWeekAway = weekdays.every((day) => awaySet.has(day));
         strip.classList.remove("all-week");
         if (labelEl) {
-          labelEl.textContent = allWeekAway ? "Away All Week" : "Away This Week";
+          labelEl.textContent = allWeekAway ? "Out All Week" : "Out of Office";
         }
 
         daysEl.innerHTML = weekdays.map((day) => {
