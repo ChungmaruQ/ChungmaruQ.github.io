@@ -1,12 +1,12 @@
 {
   "display_name": "Prof. Hyunwoo Kim",
   "date": "Sat, Jun 20",
-  "state": "focus",
-  "status_label": "Do Not Disturb",
-  "headline": "Focus Time",
-  "detail": "Please do not disturb.",
+  "state": "available",
+  "status_label": "Available",
+  "headline": "Available",
+  "detail": "At the office.",
   "next_available": "Jun 22, 09:30",
-  "current_until": "12:00",
+  "current_until": "While here",
   "todays_hours": "No hours today",
   "away_days": [
     "thu",
