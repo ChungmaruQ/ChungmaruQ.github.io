@@ -1,12 +1,12 @@
 {
   "display_name": "Prof. Hyunwoo Kim",
   "date": "Wed, Jun 24",
-  "state": "meeting",
-  "status_label": "DO NOT DISTURB",
-  "headline": "In a Meeting",
-  "detail": "Please come back later.",
-  "next_available": "13:00",
-  "current_until": "13:00",
+  "state": "remote",
+  "status_label": "Remote",
+  "headline": "Working Remotely",
+  "detail": "Working remotely.",
+  "next_available": "When back at office",
+  "current_until": "",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [],
   "battery_level": "85%",
@@ -19,6 +19,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jun 24, 12:59",
+  "updated_at": "Jun 24, 13:14",
   "source": "calendar"
 }
