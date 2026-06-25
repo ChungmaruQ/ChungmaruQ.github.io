@@ -1,12 +1,12 @@
 {
   "display_name": "Prof. Hyunwoo Kim",
   "date": "Thu, Jun 25",
-  "state": "campus",
-  "status_label": "NEARBY",
-  "headline": "On Campus",
-  "detail": "Back soon.",
-  "next_available": "Soon",
-  "current_until": "",
+  "state": "lunch",
+  "status_label": "LUNCH",
+  "headline": "Lunch Break",
+  "detail": "Back at 13:00.",
+  "next_available": "13:00",
+  "current_until": "13:00",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [],
   "battery_level": "78%",
@@ -19,6 +19,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jun 25, 11:59",
+  "updated_at": "Jun 25, 12:00",
   "source": "calendar"
 }
