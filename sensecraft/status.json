@@ -15,7 +15,7 @@
     "thu",
     "fri"
   ],
-  "battery_level": "21%",
+  "battery_level": "20%",
   "up_next_1_time": "16:00-17:00",
   "up_next_1_title": "Meeting",
   "up_next_1_type": "meeting",
@@ -25,6 +25,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jun 29, 00:28",
+  "updated_at": "Jun 29, 00:33",
   "source": "calendar"
 }
