@@ -17,18 +17,13 @@ var DEFAULT_CONFIG = {
     model: "gpt-5.5"
   },
   officeHours: {
-    mon: [["09:30", "12:00"], ["13:00", "17:00"]],
-    tue: [["09:30", "12:00"], ["13:00", "17:00"]],
-    wed: [["09:30", "12:00"], ["13:00", "17:00"]],
-    thu: [["09:30", "12:00"], ["13:00", "17:00"]],
-    fri: [["09:30", "12:00"], ["13:00", "17:00"]],
+    mon: [["09:30", "12:00"], ["13:00", "18:00"]],
+    tue: [["09:30", "12:00"], ["13:00", "18:00"]],
+    wed: [["09:30", "12:00"], ["13:00", "18:00"]],
+    thu: [["09:30", "12:00"], ["13:00", "18:00"]],
+    fri: [["09:30", "12:00"], ["13:00", "18:00"]],
     sat: [],
     sun: []
-  },
-  focusTime: {
-    enabled: true,
-    start: "10:00",
-    end: "12:00"
   },
   lunchBreak: {
     enabled: true,
@@ -41,7 +36,8 @@ var DEFAULT_CONFIG = {
   titleStatusKeywords: {
     travel: ["출장", "외근", "business trip", "offsite"],
     leave: ["휴가", "연차", "반차", "vacation", "pto", "leave", "day off"],
-    focus: ["focus", "집중", "방해 금지", "do not disturb"],
+    remote: ["remote", "재택", "원격", "wfh", "work from home"],
+    lunch: ["lunch", "lunch break", "점심", "식사"],
     teaching: ["수업", "강의", "강좌", "실습", "class", "lecture", "teaching", "course"],
     meeting: ["회의", "미팅", "meeting", "mtg", "seminar", "세미나", "call"]
   }
@@ -53,8 +49,7 @@ function refreshSenseCraftJson() {
   var config = getConfig_();
   var status = buildStatus_(config);
   var senseCraftJson = JSON.stringify(toSenseCraftStatus_(status, config), null, 2);
-  publishToGitHub_(config, senseCraftJson);
-  publishLiveHtmlToGitHub_(config, senseCraftJson);
+  publishSenseCraftToGitHub_(config, senseCraftJson);
   return senseCraftJson;
 }
 
@@ -88,8 +83,19 @@ function previewSenseCraftJson() {
 
 function doPost(e) {
   var config = getConfig_();
-  var body = parseRequestBody_(e);
+  return handlePresenceWebhook_(config, parseRequestBody_(e));
+}
 
+function doGet(e) {
+  var config = getConfig_();
+  var params = e && e.parameter ? e.parameter : {};
+  if (params.presence || params.status || params.latitude || params.longitude) {
+    return handlePresenceWebhook_(config, params);
+  }
+  return jsonResponse_({ ok: true, service: "sensecraft-office-hours" });
+}
+
+function handlePresenceWebhook_(config, body) {
   if (!config.location.webhookSecret) {
     return jsonResponse_({
       ok: false,
@@ -117,21 +123,39 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "OFFICE_LAT and OFFICE_LNG are required." });
     }
     distanceKm = distanceBetweenKm_(lat, lng, config.location.officeLat, config.location.officeLng);
-    presence = distanceKm > config.location.radiusKm ? "away" : "office";
+    presence = distanceKm > config.location.radiusKm
+      ? "away"
+      : (presence === "campus" ? "campus" : "office");
   }
 
-  if (presence !== "away" && presence !== "office") {
+  if (presence !== "away" && presence !== "office" && presence !== "campus") {
     return jsonResponse_({
       ok: false,
-      error: "Use presence/status 'office' or 'away', or send latitude/longitude."
+      error: "Use presence/status 'office', 'campus', or 'away', or send latitude/longitude."
     });
   }
 
   var props = PropertiesService.getScriptProperties();
+  var nowIso = new Date().toISOString();
+  var previousPresence = String(props.getProperty("GEOFENCE_STATUS") || "").toLowerCase();
+  var previousExitStartedAt = props.getProperty("GEOFENCE_OFFICE_EXIT_STARTED_AT") || "";
+  var officeExitStartedAt = "";
+
+  if (presence === "office") {
+    officeExitStartedAt = "";
+  } else if (presence === "campus") {
+    officeExitStartedAt = previousPresence === "office"
+      ? nowIso
+      : previousPresence === "campus"
+      ? previousExitStartedAt
+      : "";
+  }
+
   props.setProperties({
     GEOFENCE_STATUS: presence,
-    GEOFENCE_UPDATED_AT: new Date().toISOString(),
-    GEOFENCE_DISTANCE_KM: distanceKm === null ? "" : String(Math.round(distanceKm * 10) / 10)
+    GEOFENCE_UPDATED_AT: nowIso,
+    GEOFENCE_DISTANCE_KM: distanceKm === null ? "" : String(Math.round(distanceKm * 10) / 10),
+    GEOFENCE_OFFICE_EXIT_STARTED_AT: officeExitStartedAt
   });
 
   var shouldPublish = String(body.publish === undefined ? "true" : body.publish).toLowerCase() !== "false";
@@ -150,14 +174,13 @@ function doPost(e) {
     ok: !publishError,
     presence: presence,
     distance_km: distanceKm === null ? "" : Math.round(distanceKm * 10) / 10,
+    office_exit_grace_until: officeExitStartedAt
+      ? addMinutes_(new Date(officeExitStartedAt), config.location.officeExitGraceMinutes).toISOString()
+      : "",
     published: published,
     publish_error: publishError,
-    updated_at: new Date().toISOString()
+    updated_at: nowIso
   });
-}
-
-function doGet() {
-  return jsonResponse_({ ok: true, service: "sensecraft-office-hours" });
 }
 
 function buildStatus_(config) {
@@ -303,6 +326,9 @@ function computeStatus_(config, now, events, connection) {
   var currentEvents = events.filter(function(event) {
     return includesTime_(event, now);
   });
+  var geofenceAway = isGeofenceAway_(config, now);
+  var geofenceCampus = isGeofenceCampus_(config, now);
+  var geofenceOffice = isGeofenceOffice_(config, now);
   var officeInfo = getOfficeInfo_(config, now, events);
   var currentAway = firstMatching_(currentEvents, function(event) {
     return isAwayEvent_(config, event);
@@ -312,94 +338,126 @@ function computeStatus_(config, now, events, connection) {
   });
   var currentLlmStatus = null;
   var currentTitleStatus = firstTitleStatus_(config, currentEvents);
+  var currentEffectiveTitleStatus = geofenceOffice && isOfficePresenceOverridableStatus_(currentTitleStatus)
+    ? null
+    : currentTitleStatus;
   var currentWorkingLocation = firstMatching_(currentEvents, isWorkingLocation_);
   var currentWorkingLocationInfo = currentWorkingLocation ? describeWorkingLocation_(currentWorkingLocation) : null;
-  var currentFocus = firstMatching_(currentEvents, isFocusEvent_);
   var currentBusy = firstMatching_(currentEvents, function(event) {
-    return isBusyEvent_(event) && !isOfficeEvent_(config, event);
+    return isBusyEvent_(event) &&
+      !isOfficeEvent_(config, event) &&
+      !(geofenceOffice && isOfficePresenceOverridableEvent_(config, event));
   });
-  var currentImplicitFocus = currentBusy || currentTitleStatus ? null : implicitFocusTime_(config, now);
-  var currentLunch = implicitLunchBreak_(config, now);
+  var currentLlmEvents = geofenceOffice
+    ? currentEvents.filter(function(event) {
+      return !isOfficePresenceOverridableEvent_(config, event);
+    })
+    : currentEvents;
+  var hasOfficeHoursToday = hasOfficeHoursOnDate_(config, now);
+  var currentLunch = hasOfficeHoursToday ? implicitLunchBreak_(config, now) : null;
+  var nextAvailableAt = findNextAvailable_(
+    config,
+    geofenceAway ? addDays_(startOfLocalDay_(now), 1) : now,
+    events
+  );
+  var currentWorkingElsewhere = currentWorkingLocationInfo && !currentWorkingLocationInfo.availableHere && !geofenceOffice;
+  var nonOfficeDayWithoutOfficePresence = !hasOfficeHoursToday && !geofenceOffice;
 
   var state = "closed";
   var headline = "Office Hours Closed";
   var detail = "Visits are not available right now.";
   var currentUntil = officeInfo.nextWindow ? officeInfo.nextWindow.start : null;
+  var availableByPresence = false;
 
-  if (isGeofenceAway_(config, now)) {
-    state = "offsite";
-    headline = "Out of Office";
-    detail = "Away from the office.";
-    currentUntil = null;
-  } else if (currentAway) {
+  if (currentAway && !geofenceOffice) {
     state = "away";
-    headline = "Away";
-    detail = currentAway.allDay ? "Away for today." : "Away right now.";
+    headline = "Out of Office";
+    detail = currentAway.allDay ? "Out of office today." : "Out of office right now.";
     currentUntil = currentAway.end;
-  } else if (currentOffsite) {
+  } else if (currentOffsite && !geofenceOffice) {
     state = "offsite";
     headline = "Out of Office";
     detail = "Offsite appointment.";
     currentUntil = currentOffsite.end;
-  } else if (currentTitleStatus) {
-    state = currentTitleStatus.state;
-    headline = currentTitleStatus.headline;
-    detail = currentTitleStatus.detail;
-    currentUntil = currentTitleStatus.event.end;
-  } else if ((currentLlmStatus = classifyCurrentStatusWithLlm_(config, now, currentEvents))) {
+  } else if (nonOfficeDayWithoutOfficePresence) {
+    state = "off_hours";
+    headline = "Out of Office";
+    detail = nextAvailableAt
+      ? "Back " + formatSentenceDateTime_(nextAvailableAt, now, config) + "."
+      : "Office hours are closed.";
+    currentUntil = nextAvailableAt || null;
+  } else if (currentEffectiveTitleStatus) {
+    state = currentEffectiveTitleStatus.state;
+    headline = currentEffectiveTitleStatus.headline;
+    detail = currentEffectiveTitleStatus.detail;
+    currentUntil = currentEffectiveTitleStatus.event.end;
+  } else if ((currentLlmStatus = classifyCurrentStatusWithLlm_(config, now, currentLlmEvents)) &&
+      !(geofenceOffice && isOfficePresenceOverridableStatus_(currentLlmStatus))) {
     state = currentLlmStatus.state;
     headline = currentLlmStatus.headline;
     detail = currentLlmStatus.detail;
     currentUntil = currentLlmStatus.currentUntil;
-  } else if (currentWorkingLocationInfo && !currentWorkingLocationInfo.availableHere) {
+  } else if (currentWorkingElsewhere) {
     state = "remote";
-    headline = "Working Remotely";
-    detail = currentWorkingLocationInfo.label;
+    headline = "Out of Office";
+    detail = "Out of office.";
     currentUntil = currentWorkingLocation.end;
-  } else if (currentFocus) {
-    state = "focus";
-    headline = "Focus Time";
-    detail = "Please do not disturb.";
-    currentUntil = currentFocus.end;
-  } else if (currentImplicitFocus) {
-    state = "focus";
-    headline = "Focus Time";
-    detail = "Please do not disturb.";
-    currentUntil = currentImplicitFocus.end;
+  } else if (geofenceAway) {
+    state = "offsite";
+    headline = "Out of Office";
+    detail = nextAvailableAt
+      ? "Back " + formatSentenceDateTime_(nextAvailableAt, now, config) + "."
+      : "Out of office today.";
+    currentUntil = null;
   } else if (currentBusy) {
     state = "busy";
     headline = "Busy";
     detail = "Busy right now.";
     currentUntil = currentBusy.end;
+  } else if (currentLunch) {
+    state = "lunch";
+    headline = "Lunch Break";
+    detail = "Back at " + formatTime_(currentLunch.end, config) + ".";
+    currentUntil = currentLunch.end;
+  } else if (geofenceCampus) {
+    state = "campus";
+    headline = "On Campus";
+    detail = "Back soon.";
+    currentUntil = null;
   } else if (!officeInfo.isOpen) {
-    if (currentLunch) {
-      state = "lunch";
-      headline = "Lunch Break";
-      detail = "Back at " + formatTime_(currentLunch.end, config) + ".";
-      currentUntil = currentLunch.end;
+    if (geofenceOffice) {
+      state = "available";
+      headline = "Available";
+      detail = "At the office.";
+      currentUntil = null;
+      availableByPresence = true;
     } else {
       state = "off_hours";
       headline = "Out of Office";
-      detail = officeInfo.nextWindow
-        ? "Back " + formatSentenceDateTime_(officeInfo.nextWindow.start, now, config) + "."
+      detail = nextAvailableAt
+        ? "Back " + formatSentenceDateTime_(nextAvailableAt, now, config) + "."
         : "Office hours are closed.";
-      currentUntil = officeInfo.nextWindow ? officeInfo.nextWindow.start : null;
+      currentUntil = nextAvailableAt || null;
     }
-  } else if (currentWorkingLocationInfo) {
+  } else if (currentWorkingLocationInfo && geofenceOffice) {
     state = "available";
     headline = "At the Office";
     detail = currentWorkingLocationInfo.label;
     currentUntil = currentWorkingLocation.end;
   } else if (officeInfo.isOpen) {
-    state = "available";
-    headline = "Available";
-    detail = officeInfo.currentWindow && officeInfo.currentWindow.source === "calendar"
-      ? "Office hours are open."
-      : "Visits welcome.";
-    currentUntil = officeInfo.currentWindow ? officeInfo.currentWindow.end : null;
+    if (geofenceOffice) {
+      state = "available";
+      headline = "Available";
+      detail = "At the office.";
+      currentUntil = officeInfo.currentWindow ? officeInfo.currentWindow.end : null;
+    } else {
+      state = "offsite";
+      headline = "Out of Office";
+      detail = "Office presence not confirmed.";
+      currentUntil = null;
+    }
   }
 
-  var nextAvailableAt = findNextAvailable_(config, now, events);
   var agenda = events
     .filter(function(event) {
       return event.end > now;
@@ -428,6 +486,8 @@ function computeStatus_(config, now, events, connection) {
     detail: detail,
     currentUntil: currentUntil ? currentUntil.toISOString() : null,
     nextAvailableAt: nextAvailableAt ? nextAvailableAt.toISOString() : null,
+    officeOpen: officeInfo.isOpen,
+    availableByPresence: availableByPresence,
     awayDays: weeklyAwayDays_(config, now, events),
     officeHoursText: officeHoursText_(config, now),
     agenda: agenda
@@ -449,21 +509,8 @@ function isAwayEvent_(config, event) {
   return includesKeyword_(event.summary, config.awayKeywords || []);
 }
 
-function isFocusEvent_(event) {
-  return event.eventType === "focusTime";
-}
-
 function isWorkingLocation_(event) {
   return event.eventType === "workingLocation";
-}
-
-function implicitFocusTime_(config, now) {
-  var focusTime = config.focusTime || {};
-  if (focusTime.enabled === false) {
-    return null;
-  }
-
-  return implicitTimeWindow_(now, focusTime.start || "10:00", focusTime.end || "12:00");
 }
 
 function implicitLunchBreak_(config, now) {
@@ -542,6 +589,26 @@ function isAwayDayCandidate_(config, event) {
   return false;
 }
 
+function isOfficePresenceOverridableEvent_(config, event) {
+  if (!event) {
+    return false;
+  }
+
+  if (isAwayEvent_(config, event) || isOffsiteLocationEvent_(config, event)) {
+    return true;
+  }
+
+  if (isWorkingLocation_(event)) {
+    return !describeWorkingLocation_(event).availableHere;
+  }
+
+  return isOfficePresenceOverridableStatus_(titleStatusForEvent_(config, event));
+}
+
+function isOfficePresenceOverridableStatus_(status) {
+  return Boolean(status) && ["away", "leave", "offsite", "remote"].indexOf(status.state) !== -1;
+}
+
 function eventOverlapsDay_(event, day) {
   var dayEnd = addDays_(day, 1);
   return event.start < dayEnd && day < event.end;
@@ -602,7 +669,14 @@ function classifyCurrentStatusWithLlm_(config, now, currentEvents) {
       return null;
     }
 
-    status.currentUntil = currentUntilForClassification_(classification, candidates);
+    var matchedEvent = eventForClassification_(classification, candidates);
+    if (status.state === "remote" && !isRemoteTitleEvent_(config, matchedEvent)) {
+      return null;
+    }
+
+    status.currentUntil = matchedEvent
+      ? matchedEvent.end
+      : currentUntilForClassification_(classification, candidates);
     return status;
   } catch (error) {
     return null;
@@ -751,7 +825,6 @@ function llmStatusInstructions_() {
     "Prefer the most restrictive accurate status.",
     "Use offsite for business trips, external appointments, conferences, seminars away from the office, or non-office locations.",
     "Use leave for vacation, PTO, annual leave, sick leave, personal leave, or all-day leave.",
-    "Use focus for focus time or do-not-disturb work.",
     "Use teaching for classes, lectures, courses, labs, or teaching sessions.",
     "Use meeting for meetings, calls, interviews, advising, seminars, or reviews.",
     "Use busy for opaque appointments that do not fit a more specific status.",
@@ -772,11 +845,11 @@ function llmStatusSchema_() {
       },
       state: {
         type: "string",
-        enum: ["available", "busy", "meeting", "away", "leave", "focus", "teaching", "remote", "offsite"]
+        enum: ["available", "busy", "meeting", "away", "leave", "teaching", "remote", "offsite"]
       },
       detail_kind: {
         type: "string",
-        enum: ["available", "busy", "meeting", "away", "leave", "focus", "teaching", "remote", "offsite", "travel"]
+        enum: ["available", "busy", "meeting", "away", "leave", "teaching", "remote", "offsite", "travel"]
       },
       event_id: {
         type: "string",
@@ -832,18 +905,13 @@ function statusFromLlmClassification_(classification) {
     },
     away: {
       state: "away",
-      headline: "Away",
-      detail: "Away right now."
+      headline: "Out of Office",
+      detail: "Out of office right now."
     },
     leave: {
       state: "leave",
-      headline: "On Leave",
-      detail: "On leave right now."
-    },
-    focus: {
-      state: "focus",
-      headline: "Focus Time",
-      detail: "Please do not disturb."
+      headline: "Out of Office",
+      detail: "Out of office right now."
     },
     teaching: {
       state: "teaching",
@@ -852,8 +920,8 @@ function statusFromLlmClassification_(classification) {
     },
     remote: {
       state: "remote",
-      headline: "Working Remotely",
-      detail: "Working remotely."
+      headline: "Out of Office",
+      detail: "Out of office."
     },
     offsite: {
       state: "offsite",
@@ -881,10 +949,7 @@ function statusFromLlmClassification_(classification) {
 }
 
 function currentUntilForClassification_(classification, events) {
-  var eventId = String(classification.event_id || "");
-  var matched = events.find(function(event) {
-    return String(event.id || "") === eventId;
-  });
+  var matched = eventForClassification_(classification, events);
   if (matched) {
     return matched.end;
   }
@@ -892,6 +957,21 @@ function currentUntilForClassification_(classification, events) {
   return events.reduce(function(latest, event) {
     return !latest || event.end > latest ? event.end : latest;
   }, null);
+}
+
+function eventForClassification_(classification, events) {
+  var eventId = String(classification.event_id || "");
+  return events.find(function(event) {
+    return String(event.id || "") === eventId;
+  }) || null;
+}
+
+function isRemoteTitleEvent_(config, event) {
+  if (!event) {
+    return false;
+  }
+  var keywords = config.titleStatusKeywords || {};
+  return includesKeyword_(event.summary || "", keywords.remote || []);
 }
 
 function titleStatusForEvent_(config, event) {
@@ -911,15 +991,22 @@ function titleStatusForEvent_(config, event) {
   if (includesKeyword_(title, keywords.leave || [])) {
     return {
       state: "leave",
-      headline: "On Leave",
-      detail: event.allDay ? "On leave today." : "On leave right now."
+      headline: "Out of Office",
+      detail: event.allDay ? "Out of office today." : "Out of office right now."
     };
   }
-  if (includesKeyword_(title, keywords.focus || [])) {
+  if (isRemoteTitleEvent_(config, event)) {
     return {
-      state: "focus",
-      headline: "Focus Time",
-      detail: "Please do not disturb."
+      state: "remote",
+      headline: "Out of Office",
+      detail: event.allDay ? "Out of office today." : "Out of office."
+    };
+  }
+  if (includesKeyword_(title, keywords.lunch || [])) {
+    return {
+      state: "lunch",
+      headline: "Lunch Break",
+      detail: "Back after lunch."
     };
   }
   if (includesKeyword_(title, keywords.teaching || [])) {
@@ -1050,6 +1137,10 @@ function officeWindowsForDate_(config, date) {
   });
 }
 
+function hasOfficeHoursOnDate_(config, date) {
+  return officeWindowsForDate_(config, date).length > 0;
+}
+
 function officeHoursText_(config, date) {
   var windows = officeWindowsForDate_(config, date);
   if (!windows.length) {
@@ -1121,10 +1212,7 @@ function findNextAvailable_(config, now, events) {
     }
 
     var blocker = events.find(function(event) {
-      return includesTime_(event, candidate) &&
-        ((isBusyEvent_(event) && !isOfficeEvent_(config, event)) ||
-          isOffsiteLocationEvent_(config, event) ||
-          isTitleBlockingEvent_(config, event));
+      return includesTime_(event, candidate) && isAvailabilityBlockerEvent_(config, event);
     });
     if (blocker) {
       candidate = new Date(blocker.end);
@@ -1137,8 +1225,24 @@ function findNextAvailable_(config, now, events) {
   return null;
 }
 
+function isAvailabilityBlockerEvent_(config, event) {
+  if (isOfficeEvent_(config, event)) {
+    return false;
+  }
+  if (isAwayEvent_(config, event) || isOffsiteLocationEvent_(config, event) || isTitleBlockingEvent_(config, event)) {
+    return true;
+  }
+  if (isWorkingLocation_(event)) {
+    return !describeWorkingLocation_(event).availableHere;
+  }
+  return isBusyEvent_(event);
+}
+
 function implicitAvailabilityBlocker_(config, date) {
-  return implicitFocusTime_(config, date) || implicitLunchBreak_(config, date);
+  if (!hasOfficeHoursOnDate_(config, date)) {
+    return null;
+  }
+  return implicitLunchBreak_(config, date);
 }
 
 function presentAgendaEvent_(config, event) {
@@ -1161,8 +1265,14 @@ function agendaType_(config, event) {
   if (titleStatus && titleStatus.state === "meeting") {
     return { key: "meeting", label: "Meeting" };
   }
-  if (isAwayEvent_(config, event)) {
-    return { key: "away", label: "Away" };
+  if (titleStatus && titleStatus.state === "lunch") {
+    return { key: "lunch", label: "Lunch Break" };
+  }
+  if (titleStatus && ["away", "leave", "offsite", "remote"].indexOf(titleStatus.state) !== -1) {
+    return { key: "away", label: "Out of Office" };
+  }
+  if (isAwayEvent_(config, event) || isOffsiteLocationEvent_(config, event)) {
+    return { key: "away", label: "Out of Office" };
   }
   if (isOfficeEvent_(config, event)) {
     return { key: "office", label: "Office Hours" };
@@ -1170,30 +1280,34 @@ function agendaType_(config, event) {
   if (isWorkingLocation_(event)) {
     return { key: "location", label: "Work Location" };
   }
-  if (isFocusEvent_(event)) {
-    return { key: "focus", label: "Focus Time" };
-  }
   if (isBusyEvent_(event)) {
-    return { key: "busy", label: "Busy" };
+    return { key: "meeting", label: "Meeting" };
   }
-  return { key: "free", label: "Available" };
+  return { key: "available", label: "In Office" };
 }
 
 function toSenseCraftStatus_(status, config) {
+  var displayStatus = simplifyDisplayStatus_(status);
   var agenda = status.agenda || [];
   var first = agenda[0] || null;
   var second = agenda[1] || null;
   var third = agenda[2] || null;
+  var nextAvailableText = displayStatus.state === "campus"
+    ? "Soon"
+    : formatRelativeDateTime_(status.nextAvailableAt, status.now, config);
+  var currentUntilText = status.availableByPresence
+    ? "While here"
+    : formatRelativeDateTime_(status.currentUntil, status.now, config);
 
   return {
     display_name: status.displayName || "",
     date: formatDateLabel_(status.now, config),
-    state: status.state || "",
-    status_label: senseCraftStateLabel_(status.state),
-    headline: status.headline || "",
-    detail: status.detail || "",
-    next_available: formatRelativeDateTime_(status.nextAvailableAt, status.now, config),
-    current_until: formatRelativeDateTime_(status.currentUntil, status.now, config),
+    state: displayStatus.state || "",
+    status_label: senseCraftStateLabel_(status.state, displayStatus.state),
+    headline: displayStatus.headline || "",
+    detail: displayStatus.detail || "",
+    next_available: nextAvailableText,
+    current_until: currentUntilText,
     todays_hours: status.officeHoursText || "",
     away_days: status.awayDays || [],
     battery_level: formatBatteryLevel_(status.batteryLevel),
@@ -1208,6 +1322,65 @@ function toSenseCraftStatus_(status, config) {
     up_next_3_type: third && third.type ? third.type : "",
     updated_at: formatDateTimeLabel_(status.generatedAt, config),
     source: status.connection && status.connection.demo ? "demo" : "calendar"
+  };
+}
+
+function simplifyDisplayStatus_(status) {
+  var state = status.state || "";
+  var detail = status.detail || "";
+
+  if (state === "available") {
+    return {
+      state: "available",
+      headline: "In Office",
+      detail: "Please knock."
+    };
+  }
+
+  if (state === "campus") {
+    return {
+      state: "campus",
+      headline: "On Campus",
+      detail: "Back soon."
+    };
+  }
+
+  if (state === "lunch") {
+    return {
+      state: "lunch",
+      headline: "Lunch Break",
+      detail: detail || "Back soon."
+    };
+  }
+
+  if (state === "teaching") {
+    return {
+      state: "teaching",
+      headline: "In Class",
+      detail: "Class in session."
+    };
+  }
+
+  if (["busy", "meeting", "focus"].indexOf(state) !== -1) {
+    return {
+      state: "meeting",
+      headline: "In a Meeting",
+      detail: "Please come back later."
+    };
+  }
+
+  if (["away", "leave", "offsite", "off_hours", "closed", "remote"].indexOf(state) !== -1) {
+    return {
+      state: "away",
+      headline: "Out of Office",
+      detail: detail && detail.indexOf("Back ") === 0 ? detail : "Out of office."
+    };
+  }
+
+  return {
+    state: "away",
+    headline: "Out of Office",
+    detail: "Out of office."
   };
 }
 
@@ -1234,51 +1407,135 @@ function fetchBatteryLevel_(config) {
   }
 }
 
-function publishToGitHub_(config, content) {
-  publishToGitHubPath_(config, config.github.path, content, "Update SenseCraft status JSON");
-}
-
-function publishLiveHtmlToGitHub_(config, statusJson) {
-  if (!config.github.liveHtmlPath) return;
-
-  var current = readGitHubFile_(config, config.github.liveHtmlPath, false);
-  var updatedHtml = embedInitialStatusJson_(current.content, statusJson);
-  publishToGitHubPath_(
-    config,
-    config.github.liveHtmlPath,
-    updatedHtml,
-    "Update SenseCraft live HTML status"
-  );
-}
-
-function publishToGitHubPath_(config, path, content, message) {
+function publishSenseCraftToGitHub_(config, statusJson) {
   if (!config.github.token || !config.github.owner || !config.github.repo || !config.github.path) {
     throw new Error("GitHub Script Properties are incomplete.");
   }
 
-  var url = githubContentsUrl_(config, path);
-  var existing = readGitHubFile_(config, path, true);
-
-  var payload = {
-    message: message || "Update SenseCraft file",
-    content: Utilities.base64Encode(content, Utilities.Charset.UTF_8),
-    branch: config.github.branch
-  };
-  if (existing.sha) {
-    payload.sha = existing.sha;
+  if (config.github.skipUnchanged) {
+    var previousStatus = readGitHubFile_(config, config.github.path, true);
+    if (previousStatus.content && !hasMeaningfulStatusChange_(previousStatus.content, statusJson)) {
+      return;
+    }
   }
 
-  var updated = UrlFetchApp.fetch(url, {
-    method: "put",
-    headers: githubHeaders_(config),
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
+  var files = [{ path: config.github.path, content: statusJson }];
+  if (config.github.liveHtmlPath) {
+    var current = readGitHubFile_(config, config.github.liveHtmlPath, false);
+    files.push({
+      path: config.github.liveHtmlPath,
+      content: embedInitialStatusJson_(current.content, statusJson)
+    });
+  }
+
+  publishGitHubFilesInOneCommit_(config, files, "Update SenseCraft status");
+}
+
+function hasMeaningfulStatusChange_(previousJson, nextJson) {
+  try {
+    return stableStatusJson_(previousJson) !== stableStatusJson_(nextJson);
+  } catch (error) {
+    return true;
+  }
+}
+
+function stableStatusJson_(jsonText) {
+  var parsed = JSON.parse(jsonText || "{}");
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    delete parsed.updated_at;
+  }
+  return stableStringify_(parsed);
+}
+
+function stableStringify_(value) {
+  if (Array.isArray(value)) {
+    return "[" + value.map(stableStringify_).join(",") + "]";
+  }
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(function(key) {
+      return JSON.stringify(key) + ":" + stableStringify_(value[key]);
+    }).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
+function publishGitHubFilesInOneCommit_(config, files, message) {
+  var ref = fetchGitHubJson_(
+    config,
+    "/git/ref/heads/" + encodeURIComponent(config.github.branch),
+    { method: "get" }
+  );
+  var parentSha = ref.object && ref.object.sha;
+  if (!parentSha) {
+    throw new Error("Could not read GitHub branch ref.");
+  }
+
+  var parentCommit = fetchGitHubJson_(config, "/git/commits/" + parentSha, { method: "get" });
+  var baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
+  if (!baseTreeSha) {
+    throw new Error("Could not read GitHub base tree.");
+  }
+
+  var treeItems = files.map(function(file) {
+    var blob = fetchGitHubJson_(config, "/git/blobs", {
+      method: "post",
+      payload: {
+        content: file.content,
+        encoding: "utf-8"
+      }
+    });
+    return {
+      path: file.path,
+      mode: "100644",
+      type: "blob",
+      sha: blob.sha
+    };
   });
 
-  if (updated.getResponseCode() < 200 || updated.getResponseCode() >= 300) {
-    throw new Error("Could not update GitHub file: " + updated.getContentText());
+  var tree = fetchGitHubJson_(config, "/git/trees", {
+    method: "post",
+    payload: {
+      base_tree: baseTreeSha,
+      tree: treeItems
+    }
+  });
+
+  var commit = fetchGitHubJson_(config, "/git/commits", {
+    method: "post",
+    payload: {
+      message: message || "Update SenseCraft status",
+      tree: tree.sha,
+      parents: [parentSha]
+    }
+  });
+
+  fetchGitHubJson_(config, "/git/refs/heads/" + encodeURIComponent(config.github.branch), {
+    method: "patch",
+    payload: {
+      sha: commit.sha,
+      force: false
+    }
+  });
+}
+
+function fetchGitHubJson_(config, path, options) {
+  var requestOptions = {
+    method: options.method,
+    headers: githubHeaders_(config),
+    muteHttpExceptions: true
+  };
+  if (options.payload !== undefined) {
+    requestOptions.contentType = "application/json";
+    requestOptions.payload = JSON.stringify(options.payload);
   }
+
+  var response = UrlFetchApp.fetch(githubRepoApiUrl_(config, path), requestOptions);
+  var code = response.getResponseCode();
+  var text = response.getContentText();
+  if (code < 200 || code >= 300) {
+    throw new Error("GitHub API request failed: " + code + " " + text);
+  }
+  return JSON.parse(text || "{}");
 }
 
 function readGitHubFile_(config, path, allowMissing) {
@@ -1310,12 +1567,15 @@ function readGitHubFile_(config, path, allowMissing) {
 
 function githubContentsUrl_(config, path) {
   var apiPath = encodeURIComponent(path).replace(/%2F/g, "/");
+  return githubRepoApiUrl_(config, "/contents/" + apiPath);
+}
+
+function githubRepoApiUrl_(config, path) {
   return "https://api.github.com/repos/" +
     encodeURIComponent(config.github.owner) +
     "/" +
     encodeURIComponent(config.github.repo) +
-    "/contents/" +
-    apiPath;
+    path;
 }
 
 function embedInitialStatusJson_(html, statusJson) {
@@ -1341,10 +1601,22 @@ function githubHeaders_(config) {
 }
 
 function isGeofenceAway_(config, now) {
+  return isRecentGeofenceStatus_("away", config, now);
+}
+
+function isGeofenceCampus_(config, now) {
+  return isRecentGeofenceStatus_("campus", config, now) && !isOfficeExitGraceActive_(config, now);
+}
+
+function isGeofenceOffice_(config, now) {
+  return isRecentGeofenceStatus_("office", config, now) || isOfficeExitGraceActive_(config, now);
+}
+
+function isRecentGeofenceStatus_(expectedStatus, config, now) {
   var props = PropertiesService.getScriptProperties();
   var status = String(props.getProperty("GEOFENCE_STATUS") || "").toLowerCase();
   var updatedAtText = props.getProperty("GEOFENCE_UPDATED_AT");
-  if (status !== "away" || !updatedAtText) {
+  if (status !== expectedStatus || !updatedAtText) {
     return false;
   }
 
@@ -1355,6 +1627,31 @@ function isGeofenceAway_(config, now) {
 
   var ageMinutes = (now.getTime() - updatedAt.getTime()) / 60000;
   return ageMinutes <= config.location.staleMinutes;
+}
+
+function isOfficeExitGraceActive_(config, now) {
+  var graceMinutes = config.location.officeExitGraceMinutes;
+  if (!isFinite(graceMinutes) || graceMinutes <= 0) {
+    return false;
+  }
+
+  if (!isRecentGeofenceStatus_("campus", config, now)) {
+    return false;
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var startedAtText = props.getProperty("GEOFENCE_OFFICE_EXIT_STARTED_AT");
+  if (!startedAtText) {
+    return false;
+  }
+
+  var startedAt = new Date(startedAtText);
+  if (!isFinite(startedAt.getTime())) {
+    return false;
+  }
+
+  var ageMinutes = (now.getTime() - startedAt.getTime()) / 60000;
+  return ageMinutes >= 0 && ageMinutes <= graceMinutes;
 }
 
 function distanceBetweenKm_(lat1, lng1, lat2, lng2) {
@@ -1397,23 +1694,24 @@ function formatBatteryLevel_(value) {
   return String(Math.round(Math.max(0, Math.min(100, percent)))) + "%";
 }
 
-function senseCraftStateLabel_(state) {
+function senseCraftStateLabel_(state, displayState) {
   var labels = {
-    available: "Available",
-    busy: "Busy",
-    meeting: "Meeting",
-    teaching: "In Class",
-    away: "Away",
-    leave: "On Leave",
-    focus: "Do Not Disturb",
-    lunch: "Lunch Break",
-    remote: "Remote",
-    off_hours: "Out of Office",
-    offsite: "Out of Office",
-    closed: "Closed",
-    setup: "Setup Needed"
+    available: "VISITS OK",
+    away: "OFFSITE",
+    campus: "NEARBY",
+    meeting: "DO NOT DISTURB",
+    lunch: "LUNCH",
+    busy: "DO NOT DISTURB",
+    teaching: "TEACHING",
+    focus: "DO NOT DISTURB",
+    leave: "OFFSITE",
+    remote: "OFFSITE",
+    off_hours: "AFTER HOURS",
+    offsite: "OFFSITE",
+    closed: "AFTER HOURS",
+    setup: "SETUP"
   };
-  return labels[state] || "Status";
+  return labels[state] || labels[displayState] || "STATUS";
 }
 
 function formatDateLabel_(value, config) {
@@ -1498,6 +1796,12 @@ function addDays_(date, days) {
   return result;
 }
 
+function addMinutes_(date, minutes) {
+  var result = new Date(date);
+  result.setMinutes(result.getMinutes() + minutes);
+  return result;
+}
+
 function startOfLocalWeekMonday_(date) {
   var result = startOfLocalDay_(date);
   var daysSinceMonday = (result.getDay() + 6) % 7;
@@ -1545,7 +1849,6 @@ function getConfig_() {
   config.timeZone = prop_(props, "TIME_ZONE", config.timeZone);
   config.showEventTitles = propBool_(props, "SHOW_EVENT_TITLES", config.showEventTitles);
   config.officeHours = propJson_(props, "OFFICE_HOURS_JSON", config.officeHours);
-  config.focusTime = propJson_(props, "FOCUS_TIME_JSON", config.focusTime);
   config.lunchBreak = propJson_(props, "LUNCH_BREAK_JSON", config.lunchBreak);
   config.officeEventKeywords = propCsv_(props, "OFFICE_EVENT_KEYWORDS", config.officeEventKeywords);
   config.officeLocationKeywords = propCsv_(props, "OFFICE_LOCATION_KEYWORDS", config.officeLocationKeywords);
@@ -1553,7 +1856,8 @@ function getConfig_() {
   config.titleStatusKeywords = {
     travel: propCsv_(props, "TITLE_TRAVEL_KEYWORDS", config.titleStatusKeywords.travel),
     leave: propCsv_(props, "TITLE_LEAVE_KEYWORDS", config.titleStatusKeywords.leave),
-    focus: propCsv_(props, "TITLE_FOCUS_KEYWORDS", config.titleStatusKeywords.focus),
+    remote: propCsv_(props, "TITLE_REMOTE_KEYWORDS", config.titleStatusKeywords.remote),
+    lunch: propCsv_(props, "TITLE_LUNCH_KEYWORDS", config.titleStatusKeywords.lunch),
     teaching: propCsv_(props, "TITLE_TEACHING_KEYWORDS", config.titleStatusKeywords.teaching),
     meeting: propCsv_(props, "TITLE_MEETING_KEYWORDS", config.titleStatusKeywords.meeting)
   };
@@ -1588,6 +1892,7 @@ function getConfig_() {
     branch: prop_(props, "GITHUB_BRANCH", "main"),
     path: prop_(props, "GITHUB_PATH", "sensecraft/status.json"),
     liveHtmlPath: prop_(props, "GITHUB_LIVE_HTML_PATH", "sensecraft/office-hours-live.html"),
+    skipUnchanged: propBool_(props, "GITHUB_SKIP_UNCHANGED_STATUS", true),
     token: prop_(props, "GITHUB_TOKEN", "")
   };
 
@@ -1601,9 +1906,13 @@ function getConfig_() {
     webhookSecret: prop_(props, "LOCATION_WEBHOOK_SECRET", ""),
     officeLat: Number(prop_(props, "OFFICE_LAT", "")),
     officeLng: Number(prop_(props, "OFFICE_LNG", "")),
-    radiusKm: Number(prop_(props, "OFFICE_RADIUS_KM", "10")),
-    staleMinutes: Number(prop_(props, "LOCATION_STALE_MINUTES", "1440"))
+    radiusKm: Number(prop_(props, "OFFICE_RADIUS_KM", "5")),
+    staleMinutes: Number(prop_(props, "LOCATION_STALE_MINUTES", "1440")),
+    officeExitGraceMinutes: Number(prop_(props, "OFFICE_EXIT_GRACE_MINUTES", "5"))
   };
+  if (!isFinite(config.location.officeExitGraceMinutes) || config.location.officeExitGraceMinutes < 0) {
+    config.location.officeExitGraceMinutes = 5;
+  }
 
   return config;
 }
