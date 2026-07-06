@@ -87,21 +87,11 @@
       .brand {
         position: absolute;
         left: 22px;
-        top: 14px;
-      }
-
-      .brand .updated {
-        overflow: hidden;
-        color: var(--muted);
-        font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
+        top: 19px;
       }
 
       .name-line {
-        margin-top: 7px;
+        margin-top: 0;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -659,7 +649,6 @@
     <main class="canvas">
       <section class="top">
         <div class="brand">
-          <div class="updated">Updated <span data-field="updated_at"></span></div>
           <div class="name-line">
             <div class="name" data-field="display_name">Prof. Hyunwoo Kim</div>
             <div class="battery-gauge" aria-label="Battery level">
@@ -1078,7 +1067,6 @@
         root.appendChild(layer);
 
         [
-          { selector: ".brand > .updated" },
           { selector: ".name" },
           { selector: ".date-block > .label", uppercase: true },
           { selector: ".date" },
@@ -1096,8 +1084,7 @@
           { selector: ".quote-en" },
           { selector: ".quote-author", uppercase: true },
           { selector: ".lab-copy-title" },
-          { selector: ".lab-copy-detail" },
-          { selector: ".updated" }
+          { selector: ".lab-copy-detail" }
         ].forEach((target) => {
           document.querySelectorAll(target.selector).forEach((element) => {
             renderCrispTextElement(element, rootRect, layer, target);
