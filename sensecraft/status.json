@@ -1,6 +1,6 @@
 {
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Tue, Jul 7",
+  "date": "Wed, Jul 8",
   "state": "away",
   "status_label": "OFFSITE",
   "headline": "Out of Office",
@@ -11,7 +11,7 @@
   "away_days": [
     "fri"
   ],
-  "battery_level": "68%",
+  "battery_level": "67%",
   "up_next_1_time": "",
   "up_next_1_title": "",
   "up_next_1_type": "",
@@ -21,6 +21,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 7, 23:57",
+  "updated_at": "Jul 8, 00:12",
   "source": "calendar"
 }
