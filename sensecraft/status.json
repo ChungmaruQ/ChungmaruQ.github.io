@@ -5,7 +5,7 @@
   "status_label": "VISITS OK",
   "headline": "In Office",
   "detail": "Please knock.",
-  "next_available": "10:57",
+  "next_available": "11:12",
   "current_until": "12:00",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [
@@ -21,6 +21,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 8, 10:57",
+  "updated_at": "Jul 8, 11:12",
   "source": "calendar"
 }
