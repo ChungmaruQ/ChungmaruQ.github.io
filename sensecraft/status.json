@@ -5,13 +5,13 @@
   "status_label": "VISITS OK",
   "headline": "In Office",
   "detail": "Please knock.",
-  "next_available": "15:46",
+  "next_available": "15:57",
   "current_until": "18:00",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [
     "fri"
   ],
-  "battery_level": "44%",
+  "battery_level": "98%",
   "up_next_1_time": "16:00-17:00",
   "up_next_1_title": "Meeting",
   "up_next_1_type": "meeting",
@@ -21,6 +21,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 9, 15:46",
+  "updated_at": "Jul 9, 15:57",
   "source": "calendar"
 }
