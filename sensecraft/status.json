@@ -1,13 +1,13 @@
 {
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Fri, Jul 10",
+  "date": "Sat, Jul 11",
   "state": "away",
-  "status_label": "OFFSITE",
+  "status_label": "AFTER HOURS",
   "headline": "Out of Office",
-  "detail": "Out of office.",
+  "detail": "Back Jul 13, 09:30.",
   "next_available": "Jul 13, 09:30",
-  "current_until": "Tomorrow 00:00",
-  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "current_until": "Jul 13, 09:30",
+  "todays_hours": "No hours today",
   "away_days": [
     "fri"
   ],
@@ -21,6 +21,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 10, 21:27",
+  "updated_at": "Jul 11, 00:12",
   "source": "calendar"
 }
