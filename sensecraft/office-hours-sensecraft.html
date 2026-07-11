@@ -770,6 +770,10 @@
         const next = { ...status };
         const state = next.state || "";
 
+        if (next.mode === "daily" || next.daily === true) {
+          return next;
+        }
+
         if (state === "available") {
           next.state = "available";
           next.status_label = "VISITS OK";
@@ -877,7 +881,7 @@
 
         updateNextCard(status);
         updateStatusBadge(status);
-        updateAgendaVisibility();
+        updateAgendaVisibility(status);
         updateBatteryVisibility();
         updateWeekStrip(status);
         fitDynamicText();
@@ -973,6 +977,13 @@
         const label = document.querySelector(".next .label");
         const value = document.querySelector("[data-field='next_available']");
         if (!label || !value) return;
+
+        if (status.mode === "daily" || status.daily === true) {
+          label.textContent = status.next_label || "Next Office Day";
+          value.textContent = status.next_available || "";
+          renderBitmapLabel(".next-label-bitmap", label.textContent, 130, 20, 14, 12);
+          return;
+        }
 
         if (status.state === "available") {
           label.textContent = "Available Until";
@@ -1206,6 +1217,12 @@
         const badge = document.querySelector(".status-label");
         if (!badge) return;
 
+        if (status.mode === "daily" || status.daily === true) {
+          badge.textContent = status.status_label || "Status";
+          badge.classList.toggle("emphasis-badge", status.state === "away");
+          return;
+        }
+
         const state = status.state || "";
         const badgeLabels = {
           available: "VISITS OK",
@@ -1317,7 +1334,7 @@
         });
       }
 
-      function updateAgendaVisibility() {
+      function updateAgendaVisibility(status = {}) {
         const items = document.querySelectorAll(".agenda-item");
         const quote = document.querySelector(".quote-card");
         const lab = document.querySelector(".lab-card");
@@ -1330,7 +1347,9 @@
 
         const label = document.querySelector(".agenda-label");
         if (label) {
-          label.textContent = visibleCount > 0 ? "Up Next" : "Lab Website";
+          label.textContent = visibleCount > 0
+            ? (status.mode === "daily" || status.daily === true ? "Today's Plan" : "Up Next")
+            : "Lab Website";
           label.style.display = "block";
         }
 

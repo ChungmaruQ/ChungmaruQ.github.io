@@ -1,0 +1,23 @@
+{
+  "mode": "daily",
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Wed, Jul 15",
+  "state": "lunch",
+  "status_label": "LIMITED",
+  "headline": "Limited Today",
+  "detail": "On campus with scheduled blocks.",
+  "next_label": "BETTER AFTER",
+  "next_available": "14:00",
+  "current_until": "",
+  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "away_days": [],
+  "battery_level": "77%",
+  "up_next_1_time": "12:00-14:00",
+  "up_next_1_title": "Class",
+  "up_next_1_type": "teaching",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
+  "updated_at": "",
+  "source": "daily"
+}

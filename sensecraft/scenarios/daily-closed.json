@@ -1,0 +1,23 @@
+{
+  "mode": "daily",
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Sat, Jul 18",
+  "state": "setup",
+  "status_label": "NO HOURS",
+  "headline": "No Office Hours",
+  "detail": "Weekend or holiday schedule.",
+  "next_label": "NEXT OFFICE DAY",
+  "next_available": "Mon\n09:30",
+  "current_until": "",
+  "todays_hours": "No hours today",
+  "away_days": [],
+  "battery_level": "77%",
+  "up_next_1_time": "",
+  "up_next_1_title": "Office closed today",
+  "up_next_1_type": "closed",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
+  "updated_at": "",
+  "source": "daily"
+}

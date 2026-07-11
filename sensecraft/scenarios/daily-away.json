@@ -1,0 +1,26 @@
+{
+  "mode": "daily",
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Thu, Jul 16",
+  "state": "away",
+  "status_label": "OFF CAMPUS",
+  "headline": "Out Today",
+  "detail": "Not on campus today.",
+  "next_label": "NEXT OFFICE DAY",
+  "next_available": "Tomorrow\n09:30",
+  "current_until": "",
+  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "away_days": [
+    "thu",
+    "fri"
+  ],
+  "battery_level": "77%",
+  "up_next_1_time": "",
+  "up_next_1_title": "No office visits today",
+  "up_next_1_type": "away",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
+  "updated_at": "",
+  "source": "daily"
+}

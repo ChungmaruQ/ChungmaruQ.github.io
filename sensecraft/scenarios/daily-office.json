@@ -1,0 +1,25 @@
+{
+  "mode": "daily",
+  "display_name": "Prof. Hyunwoo Kim",
+  "date": "Mon, Jul 13",
+  "state": "available",
+  "status_label": "CAMPUS DAY",
+  "headline": "Office Hours",
+  "detail": "Visits welcome during office hours.",
+  "next_label": "VISIT WINDOW",
+  "next_available": "09:30\n18:00",
+  "current_until": "",
+  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "away_days": [
+    "fri"
+  ],
+  "battery_level": "77%",
+  "up_next_1_time": "",
+  "up_next_1_title": "Open office hours",
+  "up_next_1_type": "available",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
+  "updated_at": "",
+  "source": "daily"
+}

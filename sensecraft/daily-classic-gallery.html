@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daily Brief on Current Layout</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #000000;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      header {
+        padding: 22px 28px 8px;
+        border-bottom: 2px solid #000000;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 8px 0 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+        gap: 22px;
+        padding: 22px 28px 30px;
+      }
+
+      .card {
+        border: 2px solid #000000;
+        background: #ffffff;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border-bottom: 2px solid #000000;
+      }
+
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .dot {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #000000;
+        background: var(--dot);
+      }
+
+      .note {
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .frame {
+        width: 100%;
+        aspect-ratio: 5 / 3;
+        overflow: hidden;
+      }
+
+      iframe {
+        display: block;
+        width: 800px;
+        height: 480px;
+        border: 0;
+        transform: scale(var(--scale));
+        transform-origin: top left;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Daily Brief on Current Layout</h1>
+      <p>Same 800 x 480 display shell, daily wording only.</p>
+    </header>
+
+    <section class="grid" id="grid"></section>
+
+    <script>
+      const scenarios = [
+        { title: "Office Hours", note: "Campus day", file: "daily-office.json", color: "#00ff00" },
+        { title: "On Campus", note: "Nearby today", file: "daily-campus.json", color: "#0000ff" },
+        { title: "Limited Today", note: "Class or blocks", file: "daily-limited.json", color: "#ffff00" },
+        { title: "Scheduled Day", note: "Class + meeting", file: "daily-scheduled.json", color: "#ffff00" },
+        { title: "Out Today", note: "Off campus", file: "daily-away.json", color: "#ff0000" },
+        { title: "No Office Hours", note: "Weekend/holiday", file: "daily-closed.json", color: "#000000" }
+      ];
+
+      const grid = document.getElementById("grid");
+
+      function render() {
+        grid.innerHTML = "";
+        scenarios.forEach((scenario) => {
+          const card = document.createElement("article");
+          card.className = "card";
+          card.style.setProperty("--dot", scenario.color);
+          const dataUrl = new URL(`scenarios/${scenario.file}`, window.location.href).toString();
+          card.innerHTML = `
+            <div class="card-head">
+              <div class="title"><span class="dot"></span>${scenario.title}</div>
+              <div class="note">${scenario.note}</div>
+            </div>
+            <div class="frame">
+              <iframe
+                title="${scenario.title}"
+                src="office-hours-sensecraft.html?data=${encodeURIComponent(dataUrl)}&preview=${Date.now()}-${scenario.file}"
+              ></iframe>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        resizeFrames();
+      }
+
+      function resizeFrames() {
+        document.querySelectorAll(".frame").forEach((frame) => {
+          frame.style.setProperty("--scale", String(frame.clientWidth / 800));
+        });
+      }
+
+      render();
+      window.addEventListener("resize", resizeFrames);
+    </script>
+  </body>
+</html>
