@@ -1431,6 +1431,7 @@ function toDailySenseCraftStatus_(status, config) {
   var nextValue = hasOfficeHours
     ? officeVisitWindowText_(config, now)
     : formatDailyRightValue_(status.nextAvailableAt, status.now, config);
+  var planLabel = "Today's Plan";
   var planTitle = hasOfficeHours ? "Open office hours" : "Office closed today";
   var planType = hasOfficeHours ? "available" : "closed";
 
@@ -1441,7 +1442,8 @@ function toDailySenseCraftStatus_(status, config) {
     detail = "Not on campus today.";
     nextLabel = "NEXT OFFICE DAY";
     nextValue = formatDailyRightValue_(status.nextAvailableAt, status.now, config);
-    planTitle = "No office visits today";
+    planLabel = "URGENT MATTERS";
+    planTitle = "Please visit Room 535.";
     planType = "away";
     first = null;
     second = null;
@@ -1476,6 +1478,7 @@ function toDailySenseCraftStatus_(status, config) {
     todays_hours: status.officeHoursText || "",
     away_days: status.awayDays || [],
     battery_level: formatBatteryLevel_(status.batteryLevel),
+    plan_label: planLabel,
     up_next_1_time: first ? formatAgendaRange_(first, config, status.now) : "",
     up_next_1_title: first && first.title ? first.title : planTitle,
     up_next_1_type: first && first.type ? first.type : planType,

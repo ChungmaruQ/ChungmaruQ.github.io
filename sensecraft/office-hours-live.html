@@ -1388,7 +1388,7 @@
         const label = document.querySelector(".agenda-label");
         if (label) {
           label.textContent = visibleCount > 0
-            ? (status.mode === "daily" || status.daily === true ? "Today's Plan" : "Up Next")
+            ? (status.plan_label || (status.mode === "daily" || status.daily === true ? "Today's Plan" : "Up Next"))
             : "Lab Website";
           label.style.display = "block";
         }
