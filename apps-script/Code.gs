@@ -158,7 +158,7 @@ function handlePresenceWebhook_(config, body) {
     GEOFENCE_OFFICE_EXIT_STARTED_AT: officeExitStartedAt
   });
 
-  var shouldPublish = String(body.publish === undefined ? "true" : body.publish).toLowerCase() !== "false";
+  var shouldPublish = String(body.publish === undefined ? "false" : body.publish).toLowerCase() === "true";
   var published = false;
   var publishError = "";
   if (shouldPublish) {
@@ -475,6 +475,10 @@ function computeStatus_(config, now, events, connection) {
     .map(function(event) {
       return presentAgendaEvent_(config, event);
     });
+  var dailyAgenda = dailyAgendaEvents_(config, now, events).map(function(event) {
+    return presentAgendaEvent_(config, event);
+  });
+  var dailyBestAfter = dailyBestAfter_(config, now, events);
 
   return {
     connection: connection,
@@ -488,9 +492,16 @@ function computeStatus_(config, now, events, connection) {
     nextAvailableAt: nextAvailableAt ? nextAvailableAt.toISOString() : null,
     officeOpen: officeInfo.isOpen,
     availableByPresence: availableByPresence,
+    geofenceAway: geofenceAway,
+    geofenceCampus: geofenceCampus,
+    geofenceOffice: geofenceOffice,
+    hasOfficeHoursToday: hasOfficeHoursToday,
+    fullAwayDay: dayHasFullAwayBlocker_(config, now, events),
+    dailyBestAfterAt: dailyBestAfter ? dailyBestAfter.toISOString() : null,
     awayDays: weeklyAwayDays_(config, now, events),
     officeHoursText: officeHoursText_(config, now),
-    agenda: agenda
+    agenda: agenda,
+    dailyAgenda: dailyAgenda
   };
 }
 
@@ -567,6 +578,32 @@ function dayHasAwayBlocker_(config, day, events) {
     }
     return windows.some(function(window) {
       return event.start < window.end && window.start < event.end;
+    });
+  });
+}
+
+function dayHasFullAwayBlocker_(config, day, events) {
+  var windows = officeWindowsForDate_(config, day);
+  if (!windows.length) {
+    return false;
+  }
+
+  var candidates = events.filter(function(event) {
+    return isAwayDayCandidate_(config, event) && eventOverlapsDay_(event, day);
+  });
+  if (!candidates.length) {
+    return false;
+  }
+
+  if (candidates.some(function(event) {
+    return event.allDay;
+  })) {
+    return true;
+  }
+
+  return windows.every(function(window) {
+    return candidates.some(function(event) {
+      return event.start <= window.start && window.end <= event.end;
     });
   });
 }
@@ -1245,6 +1282,52 @@ function implicitAvailabilityBlocker_(config, date) {
   return implicitLunchBreak_(config, date);
 }
 
+function dailyAgendaEvents_(config, now, events) {
+  var day = startOfLocalDay_(now);
+  return events
+    .filter(function(event) {
+      return !event.allDay;
+    })
+    .filter(function(event) {
+      return eventOverlapsDay_(event, day);
+    })
+    .filter(function(event) {
+      return overlapsOfficeHours_(config, event);
+    })
+    .filter(function(event) {
+      return !isOfficeEvent_(config, event) && !isWorkingLocation_(event);
+    })
+    .sort(function(a, b) {
+      return a.start - b.start;
+    })
+    .slice(0, 5);
+}
+
+function dailyBestAfter_(config, now, events) {
+  var blockers = dailyAgendaEvents_(config, now, events).filter(function(event) {
+    return isAvailabilityBlockerEvent_(config, event);
+  });
+  if (!blockers.length) {
+    return null;
+  }
+
+  var latestEnd = blockers.reduce(function(latest, event) {
+    return !latest || event.end > latest ? event.end : latest;
+  }, null);
+  if (!latestEnd) {
+    return null;
+  }
+
+  var hasRemainingOfficeHours = officeWindowsForDate_(config, latestEnd).some(function(window) {
+    return latestEnd < window.end;
+  });
+  if (hasRemainingOfficeHours) {
+    return latestEnd;
+  }
+
+  return findNextAvailable_(config, addDays_(startOfLocalDay_(now), 1), events);
+}
+
 function presentAgendaEvent_(config, event) {
   var type = agendaType_(config, event);
   return {
@@ -1287,6 +1370,10 @@ function agendaType_(config, event) {
 }
 
 function toSenseCraftStatus_(status, config) {
+  if (config.dailyMode) {
+    return toDailySenseCraftStatus_(status, config);
+  }
+
   var displayStatus = simplifyDisplayStatus_(status);
   var agenda = status.agenda || [];
   var first = agenda[0] || null;
@@ -1320,6 +1407,84 @@ function toSenseCraftStatus_(status, config) {
     up_next_3_time: formatAgendaRange_(third, config, status.now),
     up_next_3_title: third && third.title ? third.title : "",
     up_next_3_type: third && third.type ? third.type : "",
+    updated_at: formatDateTimeLabel_(status.generatedAt, config),
+    source: status.connection && status.connection.demo ? "demo" : "calendar"
+  };
+}
+
+function toDailySenseCraftStatus_(status, config) {
+  var now = status.now ? new Date(status.now) : new Date();
+  var hasOfficeHours = Boolean(status.hasOfficeHoursToday);
+  var onCampus = Boolean(status.geofenceOffice || status.geofenceCampus);
+  var outToday = hasOfficeHours && !onCampus && Boolean(status.geofenceAway || status.fullAwayDay);
+  var agenda = status.dailyAgenda || [];
+  var first = agenda[0] || null;
+  var second = agenda[1] || null;
+  var hasAgenda = agenda.length > 0;
+  var dailyState = hasOfficeHours ? "available" : "setup";
+  var statusLabel = hasOfficeHours ? "CAMPUS DAY" : "NO HOURS";
+  var headline = hasOfficeHours ? "Office Hours" : "No Office Hours";
+  var detail = hasOfficeHours
+    ? "Visits welcome during office hours."
+    : "Weekend or holiday schedule.";
+  var nextLabel = hasOfficeHours ? "VISIT WINDOW" : "NEXT OFFICE DAY";
+  var nextValue = hasOfficeHours
+    ? officeVisitWindowText_(config, now)
+    : formatDailyRightValue_(status.nextAvailableAt, status.now, config);
+  var planTitle = hasOfficeHours ? "Open office hours" : "Office closed today";
+  var planType = hasOfficeHours ? "available" : "closed";
+
+  if (outToday) {
+    dailyState = "away";
+    statusLabel = "OFF CAMPUS";
+    headline = "Out Today";
+    detail = "Not on campus today.";
+    nextLabel = "NEXT OFFICE DAY";
+    nextValue = formatDailyRightValue_(status.nextAvailableAt, status.now, config);
+    planTitle = "No office visits today";
+    planType = "away";
+    first = null;
+    second = null;
+  } else if (hasOfficeHours && hasAgenda) {
+    dailyState = "lunch";
+    statusLabel = "SCHEDULED";
+    headline = "Limited Today";
+    detail = "On campus, but visits are limited.";
+    nextLabel = "BEST AFTER";
+    nextValue = formatDailyRightValue_(status.dailyBestAfterAt || status.nextAvailableAt, status.now, config);
+  } else if (hasOfficeHours && status.geofenceCampus && !status.geofenceOffice) {
+    dailyState = "campus";
+    statusLabel = "ON CAMPUS";
+    headline = "On Campus";
+    detail = "May step away from the office.";
+    nextLabel = "BEST CHANCE";
+    planTitle = "Campus work day";
+    planType = "campus";
+  }
+
+  return {
+    mode: "daily",
+    display_name: status.displayName || "",
+    date: formatDateLabel_(status.now, config),
+    state: dailyState,
+    status_label: statusLabel,
+    headline: headline,
+    detail: detail,
+    next_label: nextLabel,
+    next_available: nextValue || "",
+    current_until: "",
+    todays_hours: status.officeHoursText || "",
+    away_days: status.awayDays || [],
+    battery_level: formatBatteryLevel_(status.batteryLevel),
+    up_next_1_time: first ? formatAgendaRange_(first, config, status.now) : "",
+    up_next_1_title: first && first.title ? first.title : planTitle,
+    up_next_1_type: first && first.type ? first.type : planType,
+    up_next_2_time: second ? formatAgendaRange_(second, config, status.now) : "",
+    up_next_2_title: second && second.title ? second.title : "",
+    up_next_2_type: second && second.type ? second.type : "",
+    up_next_3_time: "",
+    up_next_3_title: "",
+    up_next_3_type: "",
     updated_at: formatDateTimeLabel_(status.generatedAt, config),
     source: status.connection && status.connection.demo ? "demo" : "calendar"
   };
@@ -1714,6 +1879,23 @@ function senseCraftStateLabel_(state, displayState) {
   return labels[state] || labels[displayState] || "STATUS";
 }
 
+function officeVisitWindowText_(config, date) {
+  var windows = officeWindowsForDate_(config, date);
+  if (!windows.length) {
+    return "";
+  }
+  return formatTime_(windows[0].start, config) + "\n" + formatTime_(windows[windows.length - 1].end, config);
+}
+
+function formatDailyRightValue_(value, nowValue, config) {
+  if (!value) {
+    return "";
+  }
+  return formatRelativeDateTime_(value, nowValue, config)
+    .replace(/^Tomorrow\s+/, "Tomorrow\n")
+    .replace(/^([A-Z][a-z]{2}\s+\d{1,2}),\s+/, "$1\n");
+}
+
 function formatDateLabel_(value, config) {
   if (!value) {
     return "";
@@ -1844,6 +2026,7 @@ function getConfig_() {
   var props = PropertiesService.getScriptProperties();
   var config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
+  config.dailyMode = propBool_(props, "DAILY_MODE", true);
   config.displayName = prop_(props, "DISPLAY_NAME", config.displayName);
   config.calendarId = prop_(props, "CALENDAR_ID", config.calendarId);
   config.timeZone = prop_(props, "TIME_ZONE", config.timeZone);
