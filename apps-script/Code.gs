@@ -1443,7 +1443,7 @@ function toDailySenseCraftStatus_(status, config) {
     nextLabel = "NEXT OFFICE DAY";
     nextValue = formatDailyRightValue_(status.nextAvailableAt, status.now, config);
     planLabel = "URGENT MATTERS";
-    planTitle = "Please visit Room 535.";
+    planTitle = "Please visit Room 534 (생약학 연구실)";
     planType = "away";
     first = null;
     second = null;

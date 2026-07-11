@@ -545,6 +545,21 @@
         text-overflow: ellipsis;
       }
 
+      .agenda.urgent-notice .agenda-item {
+        top: 12px;
+        width: 390px;
+        height: 58px;
+        padding-top: 6px;
+      }
+
+      .agenda.urgent-notice .agenda-title {
+        margin-top: 0;
+        font-size: 24px;
+        line-height: 1.05;
+        white-space: normal;
+        text-overflow: clip;
+      }
+
       .quote-card {
         display: none;
         position: absolute;
@@ -961,7 +976,8 @@
         fitTextToWidth(".next-time", 30, 18);
         fitTextToWidth(".hours-value", 24, 18);
         fitTextToWidth(".agenda-time", 15, 11);
-        fitTextToWidth(".agenda-title", 20, 14);
+        fitTextToWidth(".agenda:not(.urgent-notice) .agenda-title", 20, 14);
+        fitTextToWidth(".agenda.urgent-notice .agenda-title", 24, 18);
         fitTextToWidth(".quote-en", 21, 17);
         fitTextToWidth(".quote-author", 14, 12);
         fitTextToWidth(".lab-copy-title", 20, 16);
@@ -1093,7 +1109,7 @@
           { selector: ".hours-value", hours: true },
           { selector: ".agenda-label", uppercase: true },
           { selector: ".agenda-time" },
-          { selector: ".agenda-title" },
+          { selector: ".agenda-title", wrap: true },
           { selector: ".quote-en" },
           { selector: ".quote-author", uppercase: true },
           { selector: ".lab-copy-title" },
@@ -1375,9 +1391,14 @@
       }
 
       function updateAgendaVisibility(status = {}) {
+        const agenda = document.querySelector(".agenda");
         const items = document.querySelectorAll(".agenda-item");
         const quote = document.querySelector(".quote-card");
         const lab = document.querySelector(".lab-card");
+        const urgentNotice = String(status.plan_label || "").toUpperCase() === "URGENT MATTERS";
+        if (agenda) {
+          agenda.classList.toggle("urgent-notice", urgentNotice);
+        }
         let visibleCount = 0;
         items.forEach((item) => {
           const hasContent = item.textContent.trim().length > 0;
