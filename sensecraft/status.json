@@ -13,7 +13,7 @@
   "away_days": [
     "fri"
   ],
-  "battery_level": "90%",
+  "battery_level": "91%",
   "plan_label": "Today's Plan",
   "up_next_1_time": "",
   "up_next_1_title": "Office closed today",
@@ -24,6 +24,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 12, 18:30",
+  "updated_at": "Jul 12, 19:00",
   "source": "calendar"
 }
