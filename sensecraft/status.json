@@ -11,7 +11,7 @@
   "current_until": "",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [],
-  "battery_level": "37%",
+  "battery_level": "34%",
   "plan_label": "Today's Plan",
   "up_next_1_time": "13:30-16:00",
   "up_next_1_title": "Meeting",
@@ -22,6 +22,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 14, 22:30",
+  "updated_at": "Jul 14, 22:45",
   "source": "calendar"
 }
