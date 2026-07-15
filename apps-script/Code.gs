@@ -6,7 +6,8 @@ var DEFAULT_CONFIG = {
   llm: {
     enabled: false,
     provider: "mindlogic",
-    maxEvents: 3
+    maxEvents: 3,
+    dailyMaxEvents: 8
   },
   mindlogic: {
     baseUrl: "https://factchat-cloud.mindlogic.ai/v1/gateway",
@@ -54,11 +55,15 @@ function refreshSenseCraftJson() {
 }
 
 function installQuarterHourlyTrigger() {
-  installRefreshTrigger_(15);
+  installSixHourlyTrigger();
 }
 
 function installHourlyTrigger() {
-  installQuarterHourlyTrigger();
+  installSixHourlyTrigger();
+}
+
+function installSixHourlyTrigger() {
+  installRefreshTrigger_(360);
 }
 
 function installRefreshTrigger_(minutes) {
@@ -69,10 +74,12 @@ function installRefreshTrigger_(minutes) {
     }
   });
 
-  ScriptApp.newTrigger("refreshSenseCraftJson")
-    .timeBased()
-    .everyMinutes(minutes)
-    .create();
+  var builder = ScriptApp.newTrigger("refreshSenseCraftJson").timeBased();
+  if (minutes >= 60 && minutes % 60 === 0) {
+    builder.everyHours(minutes / 60).create();
+  } else {
+    builder.everyMinutes(minutes).create();
+  }
 }
 
 function previewSenseCraftJson() {
@@ -115,6 +122,8 @@ function debugTodayEvents() {
       geofence_campus: status.geofenceCampus,
       geofence_office: status.geofenceOffice,
       full_away_day: status.fullAwayDay,
+      daily_llm_status: status.dailyLlmStatus || null,
+      daily_llm_next_available_at: status.dailyLlmNextAvailableAt || "",
       away_days: status.awayDays
     },
     today_events: events.filter(function(event) {
@@ -445,7 +454,8 @@ function computeStatus_(config, now, events, connection) {
     headline = currentEffectiveTitleStatus.headline;
     detail = currentEffectiveTitleStatus.detail;
     currentUntil = currentEffectiveTitleStatus.event.end;
-  } else if ((currentLlmStatus = classifyCurrentStatusWithLlm_(config, now, currentLlmEvents)) &&
+  } else if (!config.dailyMode &&
+      (currentLlmStatus = classifyCurrentStatusWithLlm_(config, now, currentLlmEvents)) &&
       !(geofenceOffice && isOfficePresenceOverridableStatus_(currentLlmStatus))) {
     state = currentLlmStatus.state;
     headline = currentLlmStatus.headline;
@@ -533,6 +543,17 @@ function computeStatus_(config, now, events, connection) {
     return presentAgendaEvent_(config, event);
   });
   var dailyBestAfter = dailyBestAfter_(config, now, events);
+  var dailyLlmStatus = config.dailyMode
+    ? classifyDailyStatusWithLlm_(config, now, events, {
+      geofenceAway: geofenceAway,
+      geofenceCampus: geofenceCampus,
+      geofenceOffice: geofenceOffice,
+      hasOfficeHoursToday: hasOfficeHoursToday
+    })
+    : null;
+  var dailyLlmNextAvailable = dailyLlmStatus && dailyLlmStatus.dayStatus === "away"
+    ? findNextAvailable_(config, addDays_(startOfLocalDay_(now), 1), events)
+    : null;
 
   return {
     connection: connection,
@@ -551,6 +572,8 @@ function computeStatus_(config, now, events, connection) {
     geofenceOffice: geofenceOffice,
     hasOfficeHoursToday: hasOfficeHoursToday,
     fullAwayDay: dayHasFullAwayBlocker_(config, now, events),
+    dailyLlmStatus: dailyLlmStatus,
+    dailyLlmNextAvailableAt: dailyLlmNextAvailable ? dailyLlmNextAvailable.toISOString() : null,
     dailyBestAfterAt: dailyBestAfter ? dailyBestAfter.toISOString() : null,
     awayDays: weeklyAwayDays_(config, now, events),
     officeHoursText: officeHoursText_(config, now),
@@ -774,29 +797,102 @@ function classifyCurrentStatusWithLlm_(config, now, currentEvents) {
   }
 }
 
-function requestLlmClassification_(config, input) {
+function classifyDailyStatusWithLlm_(config, now, events, context) {
+  if (!config.llm.enabled) {
+    return null;
+  }
+
+  var day = startOfLocalDay_(now);
+  var candidates = events
+    .filter(function(event) {
+      return eventOverlapsDay_(event, day);
+    })
+    .filter(function(event) {
+      return !isOfficeEvent_(config, event);
+    })
+    .slice(0, config.llm.dailyMaxEvents);
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  try {
+    var input = {
+      task: "daily_office_door_status",
+      now: now.toISOString(),
+      time_zone: config.timeZone,
+      office_hours: officeHoursText_(config, now),
+      has_office_hours_today: Boolean(context.hasOfficeHoursToday),
+      presence: {
+        office: Boolean(context.geofenceOffice),
+        campus: Boolean(context.geofenceCampus),
+        away: Boolean(context.geofenceAway)
+      },
+      events: candidates.map(function(event) {
+        return {
+          id: event.id || "",
+          title: event.summary || "",
+          location: event.location || "",
+          event_type: event.eventType || "default",
+          transparency: event.transparency || "opaque",
+          all_day: Boolean(event.allDay),
+          start: event.start.toISOString(),
+          end: event.end.toISOString()
+        };
+      })
+    };
+
+    var classification = requestLlmClassification_(
+      config,
+      input,
+      llmDailyStatusInstructions_(),
+      llmDailyStatusSchema_(),
+      "office_door_daily_status"
+    );
+    if (!classification || !classification.should_override) {
+      return null;
+    }
+
+    var dayStatus = String(classification.day_status || "");
+    if (["office", "scheduled", "away", "campus", "closed"].indexOf(dayStatus) === -1) {
+      return null;
+    }
+
+    return {
+      dayStatus: dayStatus,
+      reasonKind: String(classification.reason_kind || ""),
+      primaryEventId: String(classification.primary_event_id || "")
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function requestLlmClassification_(config, input, instructions, schema, schemaName) {
   if (config.llm.provider === "mindlogic") {
-    return requestMindlogicClassification_(config, input);
+    return requestMindlogicClassification_(config, input, instructions, schema);
   }
   if (config.llm.provider === "openai") {
-    return requestOpenAiClassification_(config, input);
+    return requestOpenAiClassification_(config, input, instructions, schema, schemaName);
   }
   return null;
 }
 
-function requestMindlogicClassification_(config, input) {
+function requestMindlogicClassification_(config, input, instructions, schema) {
   if (!config.mindlogic.apiKey) {
     return null;
   }
 
   var url = trimTrailingSlash_(config.mindlogic.baseUrl) + "/chat/completions/";
+  var prompt = instructions || llmStatusInstructions_();
+  var outputSchema = schema || llmStatusSchema_();
   var payload = {
     model: config.mindlogic.model,
     messages: [
       {
         role: "system",
-        content: llmStatusInstructions_() + " Respond with only a compact JSON object matching this schema: " +
-          JSON.stringify(llmStatusSchema_())
+        content: prompt + " Respond with only a compact JSON object matching this schema: " +
+          JSON.stringify(outputSchema)
       },
       {
         role: "user",
@@ -844,11 +940,13 @@ function requestMindlogicClassification_(config, input) {
   return parseClassificationJson_(content);
 }
 
-function requestOpenAiClassification_(config, input) {
+function requestOpenAiClassification_(config, input, instructions, schema, schemaName) {
   if (!config.openai.apiKey) {
     return null;
   }
 
+  var prompt = instructions || llmStatusInstructions_();
+  var outputSchema = schema || llmStatusSchema_();
   var response = UrlFetchApp.fetch("https://api.openai.com/v1/responses", {
     method: "post",
     contentType: "application/json",
@@ -859,14 +957,14 @@ function requestOpenAiClassification_(config, input) {
       model: config.openai.model,
       store: false,
       max_output_tokens: 300,
-      instructions: llmStatusInstructions_(),
+      instructions: prompt,
       input: JSON.stringify(input),
       text: {
         format: {
           type: "json_schema",
-          name: "office_door_status",
+          name: schemaName || "office_door_status",
           strict: true,
-          schema: llmStatusSchema_()
+          schema: outputSchema
         }
       }
     }),
@@ -948,6 +1046,49 @@ function llmStatusSchema_() {
       }
     },
     required: ["should_override", "state", "detail_kind", "event_id"]
+  };
+}
+
+function llmDailyStatusInstructions_() {
+  return [
+    "Classify Prof. Hyunwoo Kim's whole-day office-door display from today's calendar events.",
+    "This is not only the current time; decide whether visitors should expect office availability for the day.",
+    "The display is public, so never reveal event titles, private names, exact locations, or sensitive details.",
+    "Use Korean and English context in event titles and locations.",
+    "Return only the structured JSON schema fields.",
+    "Use away when an all-day or major office-hours event means the professor is away from the office, off campus, offsite, traveling, visiting an external institution, at a conference, on leave, on vacation, remote, or otherwise not available for office visits.",
+    "Korean titles such as '한의학연구원 방문', external institution visits, hospital visits, conferences, business trips, and site visits should be classified as away/offsite unless clearly cancelled or transparent.",
+    "Use scheduled when the professor is on campus but office visits are limited by classes, lectures, meetings, advising, seminars, calls, lunch, or other appointments during office hours.",
+    "Use campus only when presence says campus, there is no away/offsite day, and the person is nearby but not necessarily in the office.",
+    "Use office when today has office hours and the calendar does not meaningfully restrict visits.",
+    "Use closed when there are no office hours today.",
+    "Prefer the most restrictive accurate public status."
+  ].join(" ");
+}
+
+function llmDailyStatusSchema_() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      should_override: {
+        type: "boolean",
+        description: "Whether the calendar context is sufficient to classify the daily display."
+      },
+      day_status: {
+        type: "string",
+        enum: ["office", "scheduled", "away", "campus", "closed"]
+      },
+      reason_kind: {
+        type: "string",
+        enum: ["available", "meeting", "teaching", "lunch", "busy", "offsite", "leave", "remote", "campus", "closed"]
+      },
+      primary_event_id: {
+        type: "string",
+        description: "The event id that best explains the classification, or an empty string."
+      }
+    },
+    required: ["should_override", "day_status", "reason_kind", "primary_event_id"]
   };
 }
 
@@ -1470,28 +1611,36 @@ function toDailySenseCraftStatus_(status, config) {
   var now = status.now ? new Date(status.now) : new Date();
   var hasOfficeHours = Boolean(status.hasOfficeHoursToday);
   var onCampus = Boolean(status.geofenceOffice || status.geofenceCampus);
-  var outToday = hasOfficeHours && !onCampus && Boolean(
-    status.geofenceAway ||
-    status.fullAwayDay ||
-    isDailyOutOfOfficeState_(status.state)
+  var dailyLlmStatus = status.dailyLlmStatus || null;
+  var dailyLlmDayStatus = dailyLlmStatus ? dailyLlmStatus.dayStatus : "";
+  var hasVisitHours = hasOfficeHours && dailyLlmDayStatus !== "closed";
+  var outToday = hasVisitHours && (
+    dailyLlmDayStatus === "away" ||
+    (!onCampus && Boolean(
+      status.geofenceAway ||
+      status.fullAwayDay ||
+      isDailyOutOfOfficeState_(status.state)
+    ))
   );
   var agenda = status.dailyAgenda || [];
   var first = agenda[0] || null;
   var second = agenda[1] || null;
-  var hasAgenda = agenda.length > 0;
-  var dailyState = hasOfficeHours ? "available" : "setup";
-  var statusLabel = hasOfficeHours ? "CAMPUS DAY" : "NO HOURS";
-  var headline = hasOfficeHours ? "Office Hours" : "No Office Hours";
-  var detail = hasOfficeHours
+  var hasAgenda = dailyLlmDayStatus
+    ? dailyLlmDayStatus === "scheduled"
+    : agenda.length > 0;
+  var dailyState = hasVisitHours ? "available" : "setup";
+  var statusLabel = hasVisitHours ? "CAMPUS DAY" : "NO HOURS";
+  var headline = hasVisitHours ? "Office Hours" : "No Office Hours";
+  var detail = hasVisitHours
     ? "Visits welcome during office hours."
     : "Weekend or holiday schedule.";
-  var nextLabel = hasOfficeHours ? "VISIT WINDOW" : "NEXT OFFICE DAY";
-  var nextValue = hasOfficeHours
+  var nextLabel = hasVisitHours ? "VISIT WINDOW" : "NEXT OFFICE DAY";
+  var nextValue = hasVisitHours
     ? officeVisitWindowText_(config, now)
     : formatDailyRightValue_(status.nextAvailableAt, status.now, config);
   var planLabel = "Today's Plan";
-  var planTitle = hasOfficeHours ? "Open office hours" : "Office closed today";
-  var planType = hasOfficeHours ? "available" : "closed";
+  var planTitle = hasVisitHours ? "Open office hours" : "Office closed today";
+  var planType = hasVisitHours ? "available" : "closed";
 
   if (outToday) {
     dailyState = "away";
@@ -1499,20 +1648,24 @@ function toDailySenseCraftStatus_(status, config) {
     headline = "Out Today";
     detail = "Not on campus today.";
     nextLabel = "NEXT OFFICE DAY";
-    nextValue = formatDailyRightValue_(status.nextAvailableAt, status.now, config);
+    nextValue = formatDailyRightValue_(status.dailyLlmNextAvailableAt || status.nextAvailableAt, status.now, config);
     planLabel = "URGENT MATTERS";
     planTitle = "Please visit Room 534\n(생약학 연구실)";
     planType = "away";
     first = null;
     second = null;
-  } else if (hasOfficeHours && hasAgenda) {
+  } else if (hasVisitHours && hasAgenda) {
     dailyState = "lunch";
     statusLabel = "SCHEDULED";
     headline = "Limited Today";
     detail = "On campus, but visits are limited.";
     nextLabel = "BEST AFTER";
     nextValue = formatDailyRightValue_(status.dailyBestAfterAt || status.nextAvailableAt, status.now, config);
-  } else if (hasOfficeHours && status.geofenceCampus && !status.geofenceOffice) {
+    if (!first && dailyLlmDayStatus === "scheduled") {
+      planTitle = "Schedule limits visits";
+      planType = "meeting";
+    }
+  } else if (hasVisitHours && (dailyLlmDayStatus === "campus" || (status.geofenceCampus && !status.geofenceOffice))) {
     dailyState = "campus";
     statusLabel = "ON CAMPUS";
     headline = "On Campus";
@@ -2070,10 +2223,14 @@ function getConfig_() {
   config.llm = {
     provider: String(prop_(props, "LLM_PROVIDER", defaultLlmProvider)).toLowerCase(),
     enabled: propBool_(props, "LLM_ENABLED", Boolean(mindlogicApiKey || openAiApiKey)),
-    maxEvents: Number(prop_(props, "LLM_MAX_EVENTS", prop_(props, "OPENAI_MAX_EVENTS", "3")))
+    maxEvents: Number(prop_(props, "LLM_MAX_EVENTS", prop_(props, "OPENAI_MAX_EVENTS", "3"))),
+    dailyMaxEvents: Number(prop_(props, "LLM_DAILY_MAX_EVENTS", "8"))
   };
   if (!isFinite(config.llm.maxEvents) || config.llm.maxEvents < 1) {
     config.llm.maxEvents = 3;
+  }
+  if (!isFinite(config.llm.dailyMaxEvents) || config.llm.dailyMaxEvents < 1) {
+    config.llm.dailyMaxEvents = 8;
   }
 
   config.mindlogic = {
