@@ -1414,7 +1414,11 @@ function toDailySenseCraftStatus_(status, config) {
   var now = status.now ? new Date(status.now) : new Date();
   var hasOfficeHours = Boolean(status.hasOfficeHoursToday);
   var onCampus = Boolean(status.geofenceOffice || status.geofenceCampus);
-  var outToday = hasOfficeHours && !onCampus && Boolean(status.geofenceAway || status.fullAwayDay);
+  var outToday = hasOfficeHours && !onCampus && Boolean(
+    status.geofenceAway ||
+    status.fullAwayDay ||
+    isDailyOutOfOfficeState_(status.state)
+  );
   var agenda = status.dailyAgenda || [];
   var first = agenda[0] || null;
   var second = agenda[1] || null;
@@ -1489,6 +1493,10 @@ function toDailySenseCraftStatus_(status, config) {
     updated_at: formatDateTimeLabel_(status.generatedAt, config),
     source: status.connection && status.connection.demo ? "demo" : "calendar"
   };
+}
+
+function isDailyOutOfOfficeState_(state) {
+  return ["away", "leave", "offsite", "remote"].indexOf(String(state || "")) !== -1;
 }
 
 function simplifyDisplayStatus_(status) {
