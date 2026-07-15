@@ -88,6 +88,66 @@ function previewSenseCraftJson() {
   Logger.log(JSON.stringify(toSenseCraftStatus_(status, config), null, 2));
 }
 
+function testLlmConnection() {
+  var config = getConfig_();
+  var now = new Date();
+  var day = startOfLocalDay_(now);
+  var input = {
+    task: "daily_office_door_status_test",
+    now: now.toISOString(),
+    time_zone: config.timeZone,
+    office_hours: officeHoursText_(config, now),
+    has_office_hours_today: hasOfficeHoursOnDate_(config, now),
+    presence: {
+      office: false,
+      campus: false,
+      away: false
+    },
+    events: [{
+      id: "test-external-visit",
+      title: "한의학연구원 방문",
+      location: "",
+      event_type: "default",
+      transparency: "opaque",
+      all_day: true,
+      start: day.toISOString(),
+      end: addDays_(day, 1).toISOString()
+    }]
+  };
+  var result = {
+    llm_enabled: config.llm.enabled,
+    provider: config.llm.provider,
+    has_mindlogic_key: Boolean(config.mindlogic.apiKey),
+    has_openai_key: Boolean(config.openai.apiKey),
+    expected_day_status: "away"
+  };
+
+  if (!config.llm.enabled) {
+    result.ok = false;
+    result.error = "LLM_ENABLED is false.";
+    Logger.log(JSON.stringify(result, null, 2));
+    return result;
+  }
+
+  if (config.llm.provider === "mindlogic") {
+    result.response = testMindlogicDailyClassification_(config, input);
+  } else if (config.llm.provider === "openai") {
+    result.response = testOpenAiDailyClassification_(config, input);
+  } else {
+    result.response = { ok: false, error: "Unsupported LLM_PROVIDER." };
+  }
+
+  result.ok = Boolean(
+    result.response &&
+    result.response.ok &&
+    result.response.classification &&
+    result.response.classification.should_override &&
+    result.response.classification.day_status === "away"
+  );
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
 function debugTodayEvents() {
   var config = getConfig_();
   var now = new Date();
@@ -977,6 +1037,120 @@ function requestOpenAiClassification_(config, input, instructions, schema, schem
 
   var body = JSON.parse(response.getContentText() || "{}");
   return parseClassificationJson_(extractOpenAiOutputText_(body));
+}
+
+function testMindlogicDailyClassification_(config, input) {
+  if (!config.mindlogic.apiKey) {
+    return { ok: false, error: "MINDLOGIC_API_KEY is missing." };
+  }
+
+  var payload = {
+    model: config.mindlogic.model,
+    messages: [
+      {
+        role: "system",
+        content: llmDailyStatusInstructions_() + " Respond with only a compact JSON object matching this schema: " +
+          JSON.stringify(llmDailyStatusSchema_())
+      },
+      {
+        role: "user",
+        content: JSON.stringify(input)
+      }
+    ],
+    max_tokens: 300,
+    temperature: 0,
+    response_format: {
+      type: "json_object"
+    }
+  };
+  var first = postMindlogicTest_(config, payload);
+  var finalResponse = first;
+  if (first.code < 200 || first.code >= 300) {
+    delete payload.response_format;
+    finalResponse = postMindlogicTest_(config, payload);
+    finalResponse.first_code = first.code;
+    finalResponse.first_error_preview = first.error_preview || "";
+  }
+  return finalResponse;
+}
+
+function postMindlogicTest_(config, payload) {
+  var response = UrlFetchApp.fetch(
+    trimTrailingSlash_(config.mindlogic.baseUrl) + "/chat/completions/",
+    {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        Authorization: "Bearer " + config.mindlogic.apiKey
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    }
+  );
+  var code = response.getResponseCode();
+  var text = response.getContentText() || "";
+  var result = {
+    ok: code >= 200 && code < 300,
+    code: code,
+    model: config.mindlogic.model,
+    base_url: trimTrailingSlash_(config.mindlogic.baseUrl)
+  };
+  if (!result.ok) {
+    result.error_preview = text.slice(0, 240);
+    return result;
+  }
+
+  var body = JSON.parse(text || "{}");
+  var content = body.choices &&
+    body.choices[0] &&
+    body.choices[0].message &&
+    body.choices[0].message.content;
+  result.classification = parseClassificationJson_(content);
+  return result;
+}
+
+function testOpenAiDailyClassification_(config, input) {
+  if (!config.openai.apiKey) {
+    return { ok: false, error: "OPENAI_API_KEY is missing." };
+  }
+
+  var response = UrlFetchApp.fetch("https://api.openai.com/v1/responses", {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      Authorization: "Bearer " + config.openai.apiKey
+    },
+    payload: JSON.stringify({
+      model: config.openai.model,
+      store: false,
+      max_output_tokens: 300,
+      instructions: llmDailyStatusInstructions_(),
+      input: JSON.stringify(input),
+      text: {
+        format: {
+          type: "json_schema",
+          name: "office_door_daily_status",
+          strict: true,
+          schema: llmDailyStatusSchema_()
+        }
+      }
+    }),
+    muteHttpExceptions: true
+  });
+  var code = response.getResponseCode();
+  var text = response.getContentText() || "";
+  var result = {
+    ok: code >= 200 && code < 300,
+    code: code,
+    model: config.openai.model
+  };
+  if (!result.ok) {
+    result.error_preview = text.slice(0, 240);
+    return result;
+  }
+  var body = JSON.parse(text || "{}");
+  result.classification = parseClassificationJson_(extractOpenAiOutputText_(body));
+  return result;
 }
 
 function parseClassificationJson_(value) {
