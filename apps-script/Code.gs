@@ -32,9 +32,9 @@ var DEFAULT_CONFIG = {
   },
   officeEventKeywords: ["office hour", "office hours", "오피스아워", "상담"],
   officeLocationKeywords: ["YOUR_OFFICE_ADDRESS_OR_ROOM_KEYWORD"],
-  awayKeywords: ["ooo", "out of office", "부재", "휴가", "출장"],
+  awayKeywords: ["ooo", "out of office", "부재", "휴가", "출장", "외부", "외부일정", "외부 일정"],
   titleStatusKeywords: {
-    travel: ["출장", "외근", "business trip", "offsite"],
+    travel: ["출장", "외근", "외부", "외부일정", "외부 일정", "business trip", "offsite", "external appointment"],
     leave: ["휴가", "연차", "반차", "vacation", "pto", "leave", "day off"],
     remote: ["remote", "재택", "원격", "wfh", "work from home"],
     lunch: ["lunch", "lunch break", "점심", "식사"],
@@ -186,13 +186,11 @@ function handlePresenceWebhook_(config, body) {
 function buildStatus_(config) {
   var now = new Date();
   var events = fetchCalendarEvents_(config, now);
-  var status = computeStatus_(config, now, normalizeEvents_(events), {
+  return computeStatus_(config, now, normalizeEvents_(events), {
     demo: false,
     configured: true,
     authorized: true
   });
-  status.batteryLevel = fetchBatteryLevel_(config);
-  return status;
 }
 
 function fetchCalendarEvents_(config, now) {
@@ -1397,7 +1395,7 @@ function toSenseCraftStatus_(status, config) {
     current_until: currentUntilText,
     todays_hours: status.officeHoursText || "",
     away_days: status.awayDays || [],
-    battery_level: formatBatteryLevel_(status.batteryLevel),
+    battery_level: "",
     up_next_1_time: formatAgendaRange_(first, config, status.now),
     up_next_1_title: first && first.title ? first.title : "",
     up_next_1_type: first && first.type ? first.type : "",
@@ -1477,7 +1475,7 @@ function toDailySenseCraftStatus_(status, config) {
     current_until: "",
     todays_hours: status.officeHoursText || "",
     away_days: status.awayDays || [],
-    battery_level: formatBatteryLevel_(status.batteryLevel),
+    battery_level: "",
     plan_label: planLabel,
     up_next_1_time: first ? formatAgendaRange_(first, config, status.now) : "",
     up_next_1_title: first && first.title ? first.title : planTitle,
@@ -1550,29 +1548,6 @@ function simplifyDisplayStatus_(status) {
     headline: "Out of Office",
     detail: "Out of office."
   };
-}
-
-function fetchBatteryLevel_(config) {
-  if (!config.seeed.url || !config.seeed.apiKey || !config.seeed.dataKey) {
-    return null;
-  }
-
-  try {
-    var response = UrlFetchApp.fetch(config.seeed.url, {
-      method: "get",
-      headers: {
-        "api-key": config.seeed.apiKey
-      },
-      muteHttpExceptions: true
-    });
-    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-      return null;
-    }
-    var body = JSON.parse(response.getContentText() || "{}");
-    return readPath_(body, config.seeed.dataKey);
-  } catch (error) {
-    return null;
-  }
 }
 
 function publishSenseCraftToGitHub_(config, statusJson) {
@@ -1839,29 +1814,6 @@ function degreesToRadians_(degrees) {
   return degrees * Math.PI / 180;
 }
 
-function readPath_(value, pathText) {
-  return String(pathText || "")
-    .split(".")
-    .filter(Boolean)
-    .reduce(function(current, key) {
-      return current && current[key] !== undefined ? current[key] : null;
-    }, value);
-}
-
-function formatBatteryLevel_(value) {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
-
-  var numeric = Number(value);
-  if (!isFinite(numeric)) {
-    return String(value);
-  }
-
-  var percent = numeric <= 1 ? numeric * 100 : numeric;
-  return String(Math.round(Math.max(0, Math.min(100, percent)))) + "%";
-}
-
 function senseCraftStateLabel_(state, displayState) {
   var labels = {
     available: "VISITS OK",
@@ -2080,12 +2032,6 @@ function getConfig_() {
     liveHtmlPath: prop_(props, "GITHUB_LIVE_HTML_PATH", "sensecraft/office-hours-live.html"),
     skipUnchanged: propBool_(props, "GITHUB_SKIP_UNCHANGED_STATUS", true),
     token: prop_(props, "GITHUB_TOKEN", "")
-  };
-
-  config.seeed = {
-    url: prop_(props, "SEEED_BATTERY_URL", ""),
-    dataKey: prop_(props, "SEEED_BATTERY_DATA_KEY", "result.battery.level"),
-    apiKey: prop_(props, "SEEED_BATTERY_API_KEY", "")
   };
 
   config.location = {
