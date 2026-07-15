@@ -148,6 +148,49 @@ function testLlmConnection() {
   return result;
 }
 
+function listMindlogicModels() {
+  var config = getConfig_();
+  var result = {
+    provider: config.llm.provider,
+    has_mindlogic_key: Boolean(config.mindlogic.apiKey),
+    base_url: trimTrailingSlash_(config.mindlogic.baseUrl)
+  };
+  if (!config.mindlogic.apiKey) {
+    result.ok = false;
+    result.error = "MINDLOGIC_API_KEY is missing.";
+    Logger.log(JSON.stringify(result, null, 2));
+    return result;
+  }
+
+  var response = UrlFetchApp.fetch(
+    trimTrailingSlash_(config.mindlogic.baseUrl) + "/models",
+    {
+      method: "get",
+      headers: {
+        Authorization: "Bearer " + config.mindlogic.apiKey
+      },
+      muteHttpExceptions: true
+    }
+  );
+  var code = response.getResponseCode();
+  var text = response.getContentText() || "";
+  result.ok = code >= 200 && code < 300;
+  result.code = code;
+  if (!result.ok) {
+    result.error_preview = text.slice(0, 500);
+  } else {
+    var body = JSON.parse(text || "{}");
+    result.models = (body.data || body.models || []).map(function(model) {
+      return typeof model === "string" ? model : model.id || model.name || "";
+    }).filter(Boolean);
+    if (!result.models.length) {
+      result.raw_preview = text.slice(0, 500);
+    }
+  }
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
 function debugTodayEvents() {
   var config = getConfig_();
   var now = new Date();
