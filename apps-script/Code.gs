@@ -32,9 +32,9 @@ var DEFAULT_CONFIG = {
   },
   officeEventKeywords: ["office hour", "office hours", "오피스아워", "상담"],
   officeLocationKeywords: ["YOUR_OFFICE_ADDRESS_OR_ROOM_KEYWORD"],
-  awayKeywords: ["ooo", "out of office", "부재", "휴가", "출장", "외부", "외부일정", "외부 일정"],
+  awayKeywords: ["ooo", "out of office", "부재", "휴가", "출장", "외부", "외부일정", "외부 일정", "한의학연구원"],
   titleStatusKeywords: {
-    travel: ["출장", "외근", "외부", "외부일정", "외부 일정", "business trip", "offsite", "external appointment"],
+    travel: ["출장", "외근", "외부", "외부일정", "외부 일정", "한의학연구원", "연구원 방문", "기관 방문", "business trip", "offsite", "external appointment"],
     leave: ["휴가", "연차", "반차", "vacation", "pto", "leave", "day off"],
     remote: ["remote", "재택", "원격", "wfh", "work from home"],
     lunch: ["lunch", "lunch break", "점심", "식사"],
@@ -79,6 +79,62 @@ function previewSenseCraftJson() {
   var config = getConfig_();
   var status = buildStatus_(config);
   Logger.log(JSON.stringify(toSenseCraftStatus_(status, config), null, 2));
+}
+
+function debugTodayEvents() {
+  var config = getConfig_();
+  var now = new Date();
+  var events = normalizeEvents_(fetchCalendarEvents_(config, now));
+  var day = startOfLocalDay_(now);
+  var status = computeStatus_(config, now, events, {
+    demo: false,
+    configured: true,
+    authorized: true
+  });
+  var props = PropertiesService.getScriptProperties();
+
+  Logger.log(JSON.stringify({
+    calendar_id: config.calendarId,
+    now: now.toISOString(),
+    llm: {
+      enabled: config.llm.enabled,
+      provider: config.llm.provider,
+      has_mindlogic_key: Boolean(config.mindlogic.apiKey),
+      has_openai_key: Boolean(config.openai.apiKey)
+    },
+    geofence: {
+      status: props.getProperty("GEOFENCE_STATUS") || "",
+      updated_at: props.getProperty("GEOFENCE_UPDATED_AT") || "",
+      office_exit_started_at: props.getProperty("GEOFENCE_OFFICE_EXIT_STARTED_AT") || ""
+    },
+    computed: {
+      state: status.state,
+      headline: status.headline,
+      detail: status.detail,
+      geofence_away: status.geofenceAway,
+      geofence_campus: status.geofenceCampus,
+      geofence_office: status.geofenceOffice,
+      full_away_day: status.fullAwayDay,
+      away_days: status.awayDays
+    },
+    today_events: events.filter(function(event) {
+      return eventOverlapsDay_(event, day);
+    }).map(function(event) {
+      var titleStatus = titleStatusForEvent_(config, event);
+      return {
+        title: event.summary || "",
+        location: event.location || "",
+        event_type: event.eventType || "",
+        transparency: event.transparency || "",
+        all_day: Boolean(event.allDay),
+        start: event.start ? event.start.toISOString() : "",
+        end: event.end ? event.end.toISOString() : "",
+        title_status: titleStatus ? titleStatus.state : "",
+        away_candidate: isAwayDayCandidate_(config, event),
+        availability_blocker: isAvailabilityBlockerEvent_(config, event)
+      };
+    })
+  }, null, 2));
 }
 
 function doPost(e) {
