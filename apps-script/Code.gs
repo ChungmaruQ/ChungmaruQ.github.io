@@ -11,7 +11,7 @@ var DEFAULT_CONFIG = {
   },
   mindlogic: {
     baseUrl: "https://factchat-cloud.mindlogic.ai/v1/gateway",
-    model: "claude-sonnet-4-6"
+    model: "gpt-5.4-mini"
   },
   openai: {
     enabled: false,

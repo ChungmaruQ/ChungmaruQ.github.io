@@ -81,7 +81,7 @@ LLM_MAX_EVENTS=3
 LLM_DAILY_MAX_EVENTS=8
 MINDLOGIC_API_KEY=동국 AI CHAT 서비스 API key
 MINDLOGIC_BASE_URL=https://factchat-cloud.mindlogic.ai/v1/gateway
-MINDLOGIC_MODEL=접근 가능한 모델 ID
+MINDLOGIC_MODEL=gpt-5.4-mini
 ```
 
 Mindlogic 문서 기준으로 Gateway는 OpenAI 호환 Chat Completions를 지원하며, 기본 Base URL은 `https://factchat-cloud.mindlogic.ai/v1/gateway`, 인증은 `Authorization: Bearer YOUR_API_KEY` 방식입니다. 이 스크립트는 `/chat/completions/`를 호출합니다.
@@ -91,6 +91,8 @@ Daily mode에서는 오늘 일정의 제목/장소/시간/종일 여부를 LLM A
 LLM API 연결을 확인하려면 Apps Script 편집기에서 `testLlmConnection`을 실행합니다. 로그에 `ok: true`, `code: 200`, `classification.day_status: "away"`가 나오면 정상입니다. API key는 로그에 출력하지 않습니다.
 
 `permission_denied - No access to Model ...` 또는 `code: 403`이 나오면 API key는 인식됐지만 해당 모델 권한이 없는 상태입니다. `listMindlogicModels`를 실행해 접근 가능한 모델 ID가 나오는지 확인한 뒤, Script Properties의 `MINDLOGIC_MODEL`을 그 값으로 바꿉니다.
+
+현재 확인된 접근 가능 모델 기준으로는 상태 분류 용도에 `gpt-5.4-mini`를 기본 추천합니다. 더 높은 정확도가 필요하면 `gpt-5.5` 또는 `claude-sonnet-5`로 바꿔 테스트할 수 있습니다.
 
 화면에 표시되는 현재 상태는 혼선을 줄이기 위해 아래 여섯 가지로 압축합니다.
 

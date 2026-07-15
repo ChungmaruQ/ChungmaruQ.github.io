@@ -17,7 +17,7 @@
   "LLM_DAILY_MAX_EVENTS": "8",
   "MINDLOGIC_API_KEY": "YOUR_MINDLOGIC_API_KEY",
   "MINDLOGIC_BASE_URL": "https://factchat-cloud.mindlogic.ai/v1/gateway",
-  "MINDLOGIC_MODEL": "claude-sonnet-4-6",
+  "MINDLOGIC_MODEL": "gpt-5.4-mini",
   "GITHUB_OWNER": "YOUR_GITHUB_OWNER",
   "GITHUB_REPO": "ChungmaruQ.github.io",
   "GITHUB_BRANCH": "main",
