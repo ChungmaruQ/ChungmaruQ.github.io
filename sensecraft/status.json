@@ -7,7 +7,7 @@
   "headline": "Out Today",
   "detail": "Not on campus today.",
   "next_label": "NEXT OFFICE DAY",
-  "next_available": "13:00",
+  "next_available": "Aug 3\n09:30",
   "current_until": "",
   "todays_hours": "09:30-12:00 / 13:00-18:00",
   "away_days": [],
@@ -22,6 +22,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Jul 24, 12:24",
+  "updated_at": "Jul 24, 18:24",
   "source": "calendar"
 }
