@@ -32,10 +32,7 @@ jobs:
           set -euo pipefail
           file="dist/$(TZ=Asia/Seoul date +%F).png"
           node deploy/render-e1002.mjs morning "$file"
-          if ! gh release view e1002-images >/dev/null 2>&1; then
-            gh release create e1002-images --title "E1002 dashboard images" --notes "Dated morning images for the office display." --latest=false
-          fi
-          gh release upload e1002-images "$file" --clobber
+          bash deploy/publish-e1002-image.sh "$file"
       - name: Render and publish evening outlook
         if: github.event.schedule == '20,40 8 * * *'
         env:
@@ -44,4 +41,4 @@ jobs:
           set -euo pipefail
           file="dist/$(TZ=Asia/Seoul date +%F)-evening.png"
           node deploy/render-e1002.mjs evening "$file"
-          gh release upload e1002-images "$file" --clobber
+          bash deploy/publish-e1002-image.sh "$file"
