@@ -1,0 +1,46 @@
+name: E1002 morning image
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20,40 22 * * *'
+    - cron: '20,40 8 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: e1002-morning-image
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser and Korean font
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render and publish today's image
+        if: github.event.schedule != '20,40 8 * * *'
+        run: |
+          set -euo pipefail
+          file="dist/$(TZ=Asia/Seoul date +%F).png"
+          node deploy/render-e1002.mjs morning "$file"
+          if ! gh release view e1002-images >/dev/null 2>&1; then
+            gh release create e1002-images --title "E1002 dashboard images" --notes "Dated morning images for the office display." --latest=false
+          fi
+          gh release upload e1002-images "$file" --clobber
+      - name: Render and publish evening outlook
+        if: github.event.schedule == '20,40 8 * * *'
+        env:
+          E1002_TOMORROW_URL: https://chungmaruq.github.io/sensecraft/e1002-tomorrow.json
+        run: |
+          set -euo pipefail
+          file="dist/$(TZ=Asia/Seoul date +%F)-evening.png"
+          node deploy/render-e1002.mjs evening "$file"
+          gh release upload e1002-images "$file" --clobber
