@@ -928,8 +928,45 @@
         }
       }
 
+      function localizeVisitorGuide(status) {
+        const next = { ...status };
+        const details = new Map([
+          ["Visits welcome during office hours.", "가볍게 노크해 주세요."],
+          ["Please knock.", "가볍게 노크해 주세요."],
+          ["On campus, but visits are limited.", "일정이 끝난 뒤 다시 방문해 주세요."],
+          ["Weekend or holiday schedule.", "평일에 다시 방문해 주세요."],
+          ["Holiday schedule.", "평일에 다시 방문해 주세요."],
+          ["Not on campus today.", "오늘은 외부 일정으로 자리를 비웁니다."]
+        ]);
+        const titles = new Map([
+          ["Class", "수업"], ["Teaching", "수업"], ["Meeting", "회의"],
+          ["Busy", "일정"], ["Open office hours", "방문 가능"],
+          ["Office closed today", "오늘 방문 일정 없음"],
+          ["Schedule limits visits", "수업·회의 일정"]
+        ]);
+        const weekdays = { Mon: "월", Tue: "화", Wed: "수", Thu: "목", Fri: "금", Sat: "토", Sun: "일" };
+        next.detail = details.get(next.detail) ?? next.detail;
+        if (typeof next.date === "string") {
+          next.date = next.date.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s*(.+)$/, (_, day, date) => `${date} (${weekdays[day]})`);
+        }
+        if (typeof next.next_available === "string") {
+          next.next_available = next.next_available
+            .replace(/^Tomorrow\b/, "내일")
+            .replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/, (_, day) => weekdays[day] + "요일");
+        }
+        for (let i = 1; i <= 3; i += 1) {
+          const field = `up_next_${i}_title`;
+          if (i === 1 && next.plan_label === "URGENT MATTERS" && /^Please visit Room 534\b/.test(next[field])) {
+            next[field] = "긴급 문의는 534호로\n생약학연구실";
+          } else {
+            next[field] = titles.get(next[field]) ?? next[field];
+          }
+        }
+        return next;
+      }
+
       function applyStatus(status) {
-        status = simplifyStatusForDisplay(status);
+        status = localizeVisitorGuide(simplifyStatusForDisplay(status));
         document.querySelectorAll("[data-field]").forEach((element) => {
           const field = element.getAttribute("data-field");
           element.textContent = status[field] ?? "";
@@ -1127,7 +1164,7 @@
 
         const style = window.getComputedStyle(element);
         let text = element.textContent || "";
-        if (!text.trim()) return;
+        if (!text.trim() || /[\uac00-\ud7a3]/.test(text)) return;
         if (target.uppercase || style.textTransform === "uppercase") {
           text = text.toUpperCase();
         }
@@ -1323,11 +1360,11 @@
         }
 
         const dayLabels = {
-          mon: "M",
-          tue: "T",
-          wed: "W",
-          thu: "T",
-          fri: "F"
+          mon: "월",
+          tue: "화",
+          wed: "수",
+          thu: "목",
+          fri: "금"
         };
         const weekdays = ["mon", "tue", "wed", "thu", "fri"];
         const awaySet = new Set(awayDays);
