@@ -6,6 +6,7 @@
   "status_label": "NO HOURS",
   "headline": "No Office Hours",
   "detail": "Weekend or holiday schedule.",
+  "dot_hint": "closed",
   "next_label": "NEXT OFFICE DAY",
   "next_available": "Tomorrow\n09:30",
   "current_until": "",
@@ -24,6 +25,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 15, 00:49",
+  "updated_at": "Nov 15, 18:36",
   "source": "calendar"
 }
