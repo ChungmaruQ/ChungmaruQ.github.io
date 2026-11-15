@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { mkdir, readFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { dotSpeech } from './e1002-dot-speech.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -79,14 +80,12 @@ try {
     .battery-gauge { display: none !important; }
     .next.no-time { border-left: 0; }
     .next.no-time .label, .next.no-time .next-label-bitmap, .next.no-time .next-time { display: none; }
-    .render-dot { position: absolute; left: 633px; top: 85px; width: 144px; height: 65px; display: flex; align-items: center; gap: 3px; pointer-events: none; }
-    .render-dot img { width: 52px; height: 58px; object-fit: contain; }
-    .render-dot-speech { position: relative; flex: 1; padding: 5px 3px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #000; text-align: center; word-break: keep-all; font-size: 14px; font-weight: 700; line-height: 1.2; }
+    .render-dot { position: absolute; left: 318px; top: 82px; width: 285px; height: 65px; display: flex; align-items: center; justify-content: flex-end; gap: 7px; pointer-events: none; }
+    .render-dot img { flex: none; width: 52px; height: 58px; object-fit: contain; }
+    .render-dot-speech { position: relative; max-width: 226px; padding: 5px 7px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #000; text-align: center; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.2; }
     .render-dot-speech::after { content: ''; position: absolute; right: -5px; top: calc(50% - 4px); width: 7px; height: 7px; border: solid var(--accent); border-width: 2px 2px 0 0; background: #fff; transform: rotate(45deg); }
   ` });
-  const speech = mode === 'evening'
-    ? ({ office: '내일 와 주세요!', scheduled: '내일 일정 확인!', closed: '평일에 만나요!' })[forecastKind] || '다음에 만나요!'
-    : ({ available: '노크해 주세요!', setup: '평일에 만나요!', away: '다음에 만나요!' })[status.state] || '방문 전 확인!';
+  const speech = dotSpeech(status, mode, forecastKind);
   await page.evaluate(async ({ png, speech }) => {
     const next = document.querySelector('.next');
     next.classList.toggle('no-time', !next.querySelector('.next-time').textContent.trim());
@@ -99,7 +98,8 @@ try {
     const bubble = document.createElement('span');
     bubble.className = 'render-dot-speech';
     bubble.textContent = speech;
-    note.append(bubble, icon);
+    if (speech) note.append(bubble);
+    note.append(icon);
     document.querySelector('.canvas').append(note);
   }, { png: dot.toString('base64'), speech });
   await mkdir(dirname(output), { recursive: true });
