@@ -17,28 +17,46 @@ const evening = new Map([
 export function dotSpeech(status, mode, forecastKind) {
   if (mode === 'evening') {
     const at = forecastKind === 'scheduled' ? koreanTime(status.next_available || '') : '';
-    return at ? `${at} 이후가 좋아요!` : evening.get(forecastKind) || '다음에 만나요!';
+    if (at && status.dot_guidance?.kind === 'before' && status.dot_guidance.time === status.next_available) {
+      return `내일 ${at} 전이 좋아요!`;
+    }
+    return at ? `내일 ${at} 이후가 좋아요!` : evening.get(forecastKind) || '다음에 만나요!';
   }
   const fallback = { available: 'welcome', lunch: 'busy', busy: 'busy', meeting: 'meeting', teaching: 'teaching', away: 'away', closed: 'closed' };
   const known = status.headline === 'No Office Hours' ? 'closed' : fallback[status.state];
   const hint = morning.has(status.dot_hint) ? status.dot_hint : known || 'check';
+  if (hint === 'closed' || hint === 'away') {
+    const next = nextVisitDay(status.next_available);
+    if (next === 'tomorrow') return '내일 만나요!';
+    if (next === 'later') return '다음 방문일에 만나요!';
+  }
   if (['busy', 'teaching', 'meeting'].includes(hint)) {
     const guidance = status.dot_guidance;
     if (guidance?.kind === 'morning' && /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(status.next_available || '')) {
-      return '오전 중에 오시는 게 좋아요!';
+      return '오늘 오전에 오시는 게 좋아요!';
     }
     if (guidance?.time && guidance.time === status.next_available) {
       const at = koreanTime(guidance.time);
       if (at && guidance.kind === 'before') return `오늘은 ${at} 전에 와 주세요.`;
-      if (at && guidance.kind === 'from') return `${at} 이후가 좋아요!`;
+      if (at && guidance.kind === 'from') return `오늘 ${at} 이후가 좋아요!`;
     }
   }
   if (hint === 'meeting' || hint === 'busy') {
     const type = hint === 'meeting' ? 'meeting' : 'away';
     const periods = agendaPeriods(status, type);
-    if (periods) return `${periods}에 ${type === 'meeting' ? '회의가' : '외출 일정이'} 있어요.`;
+    if (periods) return `오늘 ${periods}에 ${type === 'meeting' ? '회의가' : '외출 일정이'} 있어요.`;
   }
   return morning.get(hint);
+}
+
+function nextVisitDay(value) {
+  const match = /^(Tomorrow|내일|[A-Z][a-z]{2} \d{1,2})[\s,]+(\d{2}:\d{2})$/.exec(value || '');
+  if (!match || !koreanTime(match[2])) return '';
+  if (match[1] === 'Tomorrow' || match[1] === '내일') return 'tomorrow';
+  const [month, day] = match[1].split(' ');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const index = months.indexOf(month);
+  return index >= 0 && Number(day) >= 1 && Number(day) <= 31 ? 'later' : '';
 }
 
 function koreanTime(value) {

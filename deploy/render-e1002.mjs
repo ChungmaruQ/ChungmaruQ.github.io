@@ -65,6 +65,10 @@ if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_
     if (typeof forecast.visit_after === 'string' && new RegExp('^' + time + '$').test(forecast.visit_after)) {
       status.next_label = 'TOMORROW';
       status.next_available = forecast.visit_after;
+    } else if (typeof forecast.visit_before === 'string' && new RegExp('^' + time + '$').test(forecast.visit_before)) {
+      status.next_label = 'TOMORROW UNTIL';
+      status.next_available = forecast.visit_before;
+      status.dot_guidance = { kind: 'before', time: forecast.visit_before };
     }
   }
 }
