@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { mkdir, rename } from 'node:fs/promises';
+import { mkdir, readFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 const require = createRequire(import.meta.url);
@@ -19,12 +19,21 @@ const evening = {
   plan_label: 'URGENT MATTERS', up_next_1_title: '긴급 문의는 534호로\n생약학연구실'
 };
 let status = evening;
-if (mode === 'evening' && process.env.E1002_TOMORROW_URL) {
-  const response = await fetch(process.env.E1002_TOMORROW_URL, { cache: 'no-store' });
-  if (!response.ok) throw new Error(`Tomorrow feed HTTP ${response.status}`);
-  const forecast = await response.json();
+if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_TOMORROW_URL)) {
+  const snapshot = process.env.E1002_TOMORROW_FILE;
+  let forecast;
+  if (snapshot) {
+    forecast = JSON.parse(await readFile(snapshot, 'utf8'));
+  } else {
+    const response = await fetch(process.env.E1002_TOMORROW_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Tomorrow feed HTTP ${response.status}`);
+    forecast = await response.json();
+  }
+  const imageDate = snapshot && output.match(/(\d{4}-\d{2}-\d{2})-evening\.png$/);
+  if (snapshot && !imageDate) throw new Error('Expected a dated evening image filename');
+  const day = imageDate ? Date.parse(imageDate[1] + 'T00:00:00+09:00') : Date.now();
   const tomorrow = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' })
-    .format(new Date(Date.now() + 86400000));
+    .format(new Date(day + 86400000));
   if (forecast.date !== tomorrow) throw new Error('Tomorrow forecast is missing or stale');
   status = { ...evening, detail: ({
     office: '내일 방문은 안내된 시간에 가능합니다.',

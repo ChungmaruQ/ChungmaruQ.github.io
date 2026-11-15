@@ -1,9 +1,17 @@
-name: E1002 morning image
+name: E1002 dashboard images
 on:
   workflow_dispatch:
+    inputs:
+      image:
+        description: Image to publish
+        type: choice
+        options: [morning, evening]
+        default: morning
+  push:
+    branches: [main]
+    paths: [sensecraft/e1002-tomorrow.json]
   schedule:
     - cron: '20,40 22 * * *'
-    - cron: '20,40 8 * * *'
 
 permissions:
   contents: write
@@ -27,18 +35,20 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.56.1
           google-chrome --version
       - name: Render and publish today's image
-        if: github.event.schedule != '20,40 8 * * *'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.image == 'morning')
         run: |
           set -euo pipefail
           file="dist/$(TZ=Asia/Seoul date +%F).png"
           node deploy/render-e1002.mjs morning "$file"
           bash deploy/publish-e1002-image.sh "$file"
       - name: Render and publish evening outlook
-        if: github.event.schedule == '20,40 8 * * *'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.image == 'evening')
         env:
-          E1002_TOMORROW_URL: https://chungmaruq.github.io/sensecraft/e1002-tomorrow.json
+          E1002_TOMORROW_FILE: sensecraft/e1002-tomorrow.json
         run: |
           set -euo pipefail
-          file="dist/$(TZ=Asia/Seoul date +%F)-evening.png"
+          forecast=$(jq -er '.date | select(test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"))' "$E1002_TOMORROW_FILE")
+          evening=$(date -u -d "$forecast - 1 day" +%F)
+          file="dist/$evening-evening.png"
           node deploy/render-e1002.mjs evening "$file"
           bash deploy/publish-e1002-image.sh "$file"
