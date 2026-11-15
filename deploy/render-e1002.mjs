@@ -81,27 +81,32 @@ try {
     .next.no-time { border-left: 0; }
     .next.no-time .label, .next.no-time .next-label-bitmap, .next.no-time .next-time { display: none; }
     .render-dot { position: absolute; left: 318px; top: 82px; width: 285px; height: 65px; display: flex; align-items: center; justify-content: flex-end; gap: 7px; pointer-events: none; }
+    .render-dot.is-right { left: 629px; width: 149px; }
     .render-dot img { flex: none; width: 52px; height: 58px; object-fit: contain; }
     .render-dot-speech { position: relative; max-width: 226px; padding: 5px 7px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #000; text-align: center; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.2; }
+    .render-dot.is-right .render-dot-speech { min-width: 0; white-space: normal; word-break: keep-all; padding-inline: 4px; }
     .render-dot-speech::after { content: ''; position: absolute; right: -5px; top: calc(50% - 4px); width: 7px; height: 7px; border: solid var(--accent); border-width: 2px 2px 0 0; background: #fff; transform: rotate(45deg); }
   ` });
   const speech = dotSpeech(status, mode, forecastKind);
-  await page.evaluate(async ({ png, speech }) => {
+  const weekend = /^(Sat|Sun),\s/.test(status.date || '');
+  await page.evaluate(async ({ png, speech, weekend }) => {
     const next = document.querySelector('.next');
-    next.classList.toggle('no-time', !next.querySelector('.next-time').textContent.trim());
+    const hasTime = Boolean(next.querySelector('.next-time').textContent.trim());
+    next.classList.toggle('no-time', !hasTime);
     const icon = new Image();
     icon.alt = '';
     icon.src = 'data:image/png;base64,' + png;
     await icon.decode();
     const note = document.createElement('div');
     note.className = 'render-dot';
+    note.classList.toggle('is-right', weekend || !hasTime);
     const bubble = document.createElement('span');
     bubble.className = 'render-dot-speech';
     bubble.textContent = speech;
     if (speech) note.append(bubble);
     note.append(icon);
     document.querySelector('.canvas').append(note);
-  }, { png: dot.toString('base64'), speech });
+  }, { png: dot.toString('base64'), speech, weekend });
   await mkdir(dirname(output), { recursive: true });
   await page.locator('.canvas').screenshot({ path: output + '.tmp', type: 'png' });
   await rename(output + '.tmp', output);
