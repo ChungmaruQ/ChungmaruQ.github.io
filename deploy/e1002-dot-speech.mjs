@@ -15,7 +15,10 @@ const evening = new Map([
 ]);
 
 export function dotSpeech(status, mode, forecastKind) {
-  if (mode === 'evening') return evening.get(forecastKind) || '다음에 만나요!';
+  if (mode === 'evening') {
+    const at = forecastKind === 'scheduled' ? koreanTime(status.next_available || '') : '';
+    return at ? `${at} 이후가 좋아요!` : evening.get(forecastKind) || '다음에 만나요!';
+  }
   const fallback = { available: 'welcome', lunch: 'busy', busy: 'busy', meeting: 'meeting', teaching: 'teaching', away: 'away', closed: 'closed' };
   const known = status.headline === 'No Office Hours' ? 'closed' : fallback[status.state];
   const hint = morning.has(status.dot_hint) ? status.dot_hint : known || 'check';

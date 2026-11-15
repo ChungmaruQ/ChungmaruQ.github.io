@@ -45,6 +45,28 @@ if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_
     away: '내일은 외부 일정으로 자리를 비웁니다.',
     closed: '내일은 방문 일정이 없습니다.'
   })[forecast.kind] || evening.detail };
+  if (forecast.kind === 'scheduled') {
+    const labels = new Map([['busy', '일정'], ['meeting', '회의'], ['teaching', '수업'], ['away', '외출'], ['lunch', '점심']]);
+    const time = '(?:[01]\\d|2[0-3]):[0-5]\\d';
+    const range = new RegExp('^' + time + '-' + time + '$');
+    const agenda = (Array.isArray(forecast.agenda) ? forecast.agenda : [])
+      .filter(item => item && labels.has(item.type) && typeof item.time === 'string' && range.test(item.time))
+      .slice(0, 2);
+    if (agenda.length) {
+      status.plan_label = "Tomorrow's Plan";
+      status.detail = '내일 일정과 방문 가능 시간을 확인해 주세요.';
+      agenda.forEach((item, index) => {
+        const prefix = `up_next_${index + 1}`;
+        status[prefix + '_time'] = item.time;
+        status[prefix + '_title'] = labels.get(item.type);
+        status[prefix + '_type'] = item.type;
+      });
+    }
+    if (typeof forecast.visit_after === 'string' && new RegExp('^' + time + '$').test(forecast.visit_after)) {
+      status.next_label = 'TOMORROW';
+      status.next_available = forecast.visit_after;
+    }
+  }
 }
 if (mode === 'morning') {
   const response = await fetch(data, { cache: 'no-store' });
@@ -85,11 +107,14 @@ try {
     .render-dot img { flex: none; width: 52px; height: 58px; object-fit: contain; }
     .render-dot-speech { position: relative; max-width: 226px; padding: 5px 7px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #000; text-align: center; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.2; }
     .render-dot.is-right .render-dot-speech { min-width: 0; white-space: normal; word-break: keep-all; padding-inline: 4px; }
+    .render-dot.is-right.is-evening { top: 90px; height: 116px; flex-direction: column; justify-content: flex-start; gap: 5px; }
+    .render-dot.is-right.is-evening .render-dot-speech { white-space: nowrap; font-size: 13px; padding-inline: 6px; }
     .render-dot-speech::after { content: ''; position: absolute; right: -5px; top: calc(50% - 4px); width: 7px; height: 7px; border: solid var(--accent); border-width: 2px 2px 0 0; background: #fff; transform: rotate(45deg); }
+    .render-dot.is-right.is-evening .render-dot-speech::after { right: calc(50% - 4px); top: auto; bottom: -5px; border-width: 0 2px 2px 0; }
   ` });
   const speech = dotSpeech(status, mode, forecastKind);
   const weekend = /^(Sat|Sun),\s/.test(status.date || '');
-  await page.evaluate(async ({ png, speech, weekend }) => {
+  await page.evaluate(async ({ png, speech, weekend, evening }) => {
     const next = document.querySelector('.next');
     const hasTime = Boolean(next.querySelector('.next-time').textContent.trim());
     next.classList.toggle('no-time', !hasTime);
@@ -100,13 +125,14 @@ try {
     const note = document.createElement('div');
     note.className = 'render-dot';
     note.classList.toggle('is-right', weekend || !hasTime);
+    note.classList.toggle('is-evening', evening);
     const bubble = document.createElement('span');
     bubble.className = 'render-dot-speech';
     bubble.textContent = speech;
     if (speech) note.append(bubble);
     note.append(icon);
     document.querySelector('.canvas').append(note);
-  }, { png: dot.toString('base64'), speech, weekend });
+  }, { png: dot.toString('base64'), speech, weekend, evening: mode === 'evening' });
   await mkdir(dirname(output), { recursive: true });
   await page.locator('.canvas').screenshot({ path: output + '.tmp', type: 'png' });
   await rename(output + '.tmp', output);
