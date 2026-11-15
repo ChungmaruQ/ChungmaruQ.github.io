@@ -11,6 +11,7 @@ if (!['morning', 'evening'].includes(mode) || !output) {
 
 const source = new URL(process.env.E1002_PAGE || 'https://chungmaruq.github.io/sensecraft/office-hours-live.html');
 const data = new URL('status.json', source);
+const dot = await readFile(new URL('../sensecraft/office-v2-dot.png', import.meta.url));
 const evening = {
   mode: 'daily', display_name: 'Prof. Hyunwoo Kim', state: 'away',
   status_label: 'AFTER HOURS', headline: 'Out of Office',
@@ -71,6 +72,15 @@ try {
     await document.fonts.ready;
     applyStatus(normalizeStatus(data));
   }, status);
+  await page.evaluate(async png => {
+    const icon = new Image();
+    icon.alt = '';
+    icon.src = 'data:image/png;base64,' + png;
+    await icon.decode();
+    // The right-column heading starts at y=157. Keep the icon above it.
+    icon.style.cssText = 'position:absolute;left:667px;top:81px;width:68px;height:68px;object-fit:contain;pointer-events:none';
+    document.querySelector('.canvas').append(icon);
+  }, dot.toString('base64'));
   await mkdir(dirname(output), { recursive: true });
   await page.locator('.canvas').screenshot({ path: output + '.tmp', type: 'png' });
   await rename(output + '.tmp', output);
