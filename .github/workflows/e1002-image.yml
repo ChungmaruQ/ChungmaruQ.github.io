@@ -11,7 +11,9 @@ on:
     branches: [main]
     paths: [sensecraft/e1002-tomorrow.json]
   schedule:
-    - cron: '20,40 22 * * *'
+    # 06:55 and 07:15 Seoul time, ahead of the 08:00 device refresh.
+    - cron: '55 21 * * *'
+    - cron: '15 22 * * *'
 
 permissions:
   contents: write
