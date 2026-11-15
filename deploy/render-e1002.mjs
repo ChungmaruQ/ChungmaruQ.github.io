@@ -20,6 +20,7 @@ const evening = {
   plan_label: 'URGENT MATTERS', up_next_1_title: '긴급 문의는 534호로\n생약학연구실'
 };
 let status = evening;
+let forecastKind;
 if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_TOMORROW_URL)) {
   const snapshot = process.env.E1002_TOMORROW_FILE;
   let forecast;
@@ -36,6 +37,7 @@ if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_
   const tomorrow = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' })
     .format(new Date(day + 86400000));
   if (forecast.date !== tomorrow) throw new Error('Tomorrow forecast is missing or stale');
+  forecastKind = forecast.kind;
   status = { ...evening, detail: ({
     office: '내일 방문은 안내된 시간에 가능합니다.',
     scheduled: '내일은 일정이 있어 방문 전 확인해 주세요.',
@@ -72,15 +74,34 @@ try {
     await document.fonts.ready;
     applyStatus(normalizeStatus(data));
   }, status);
-  await page.evaluate(async png => {
+  await page.addStyleTag({ content: `
+    .canvas::after { box-shadow: inset 0 0 0 2px var(--accent); }
+    .battery-gauge { display: none !important; }
+    .next.no-time { border-left: 0; }
+    .next.no-time .label, .next.no-time .next-label-bitmap, .next.no-time .next-time { display: none; }
+    .render-dot { position: absolute; left: 633px; top: 85px; width: 144px; height: 65px; display: flex; align-items: center; gap: 3px; pointer-events: none; }
+    .render-dot img { width: 52px; height: 58px; object-fit: contain; }
+    .render-dot-speech { position: relative; flex: 1; padding: 5px 3px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #000; text-align: center; word-break: keep-all; font-size: 14px; font-weight: 700; line-height: 1.2; }
+    .render-dot-speech::after { content: ''; position: absolute; right: -5px; top: calc(50% - 4px); width: 7px; height: 7px; border: solid var(--accent); border-width: 2px 2px 0 0; background: #fff; transform: rotate(45deg); }
+  ` });
+  const speech = mode === 'evening'
+    ? ({ office: '내일 와 주세요!', scheduled: '내일 일정 확인!', closed: '평일에 만나요!' })[forecastKind] || '다음에 만나요!'
+    : ({ available: '노크해 주세요!', setup: '평일에 만나요!', away: '다음에 만나요!' })[status.state] || '방문 전 확인!';
+  await page.evaluate(async ({ png, speech }) => {
+    const next = document.querySelector('.next');
+    next.classList.toggle('no-time', !next.querySelector('.next-time').textContent.trim());
     const icon = new Image();
     icon.alt = '';
     icon.src = 'data:image/png;base64,' + png;
     await icon.decode();
-    // The right-column heading starts at y=157. Keep the icon above it.
-    icon.style.cssText = 'position:absolute;left:667px;top:81px;width:68px;height:68px;object-fit:contain;pointer-events:none';
-    document.querySelector('.canvas').append(icon);
-  }, dot.toString('base64'));
+    const note = document.createElement('div');
+    note.className = 'render-dot';
+    const bubble = document.createElement('span');
+    bubble.className = 'render-dot-speech';
+    bubble.textContent = speech;
+    note.append(bubble, icon);
+    document.querySelector('.canvas').append(note);
+  }, { png: dot.toString('base64'), speech });
   await mkdir(dirname(output), { recursive: true });
   await page.locator('.canvas').screenshot({ path: output + '.tmp', type: 'png' });
   await rename(output + '.tmp', output);
