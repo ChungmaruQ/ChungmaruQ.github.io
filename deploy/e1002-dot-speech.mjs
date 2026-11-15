@@ -3,7 +3,7 @@ const morning = new Map([
   ['busy', '오늘은 일정이 있어요.'],
   ['teaching', '오늘 수업이 있어요.'],
   ['meeting', '오늘 회의가 있어요.'],
-  ['away', '오늘은 부재중이에요.'],
+  ['away', '오늘은 방문이 어려워요.'],
   ['closed', '평일에 다시 만나요!'],
   ['check', '']
 ]);
@@ -19,12 +19,31 @@ export function dotSpeech(status, mode, forecastKind) {
   const fallback = { available: 'welcome', lunch: 'busy', busy: 'busy', meeting: 'meeting', teaching: 'teaching', away: 'away', closed: 'closed' };
   const known = status.headline === 'No Office Hours' ? 'closed' : fallback[status.state];
   const hint = morning.has(status.dot_hint) ? status.dot_hint : known || 'check';
+  if (['busy', 'teaching', 'meeting'].includes(hint)) {
+    const guidance = status.dot_guidance;
+    if (guidance?.kind === 'morning' && /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(status.next_available || '')) {
+      return '오전 중에 오시는 게 좋아요!';
+    }
+    if (guidance?.time && guidance.time === status.next_available) {
+      const at = koreanTime(guidance.time);
+      if (at && guidance.kind === 'before') return `오늘은 ${at} 전에 와 주세요.`;
+      if (at && guidance.kind === 'from') return `${at} 이후가 좋아요!`;
+    }
+  }
   if (hint === 'meeting' || hint === 'busy') {
     const type = hint === 'meeting' ? 'meeting' : 'away';
     const periods = agendaPeriods(status, type);
     if (periods) return `${periods}에 ${type === 'meeting' ? '회의가' : '외출 일정이'} 있어요.`;
   }
   return morning.get(hint);
+}
+
+function koreanTime(value) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return '';
+  const h = Number(match[1]), m = Number(match[2]);
+  if (h > 23 || m > 59) return '';
+  return `${h >= 12 ? '오후' : '오전'} ${h % 12 || 12}시${m === 30 ? ' 반' : m ? ` ${m}분` : ''}`;
 }
 
 function agendaPeriods(status, type) {
