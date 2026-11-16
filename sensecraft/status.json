@@ -5,8 +5,8 @@
   "state": "lunch",
   "status_label": "SCHEDULED",
   "headline": "Limited Today",
-  "detail": "일정이 끝난 뒤 다시 방문해 주세요.",
-  "dot_hint": "busy",
+  "detail": "수업이 끝난 뒤 다시 방문해 주세요.",
+  "dot_hint": "teaching",
   "dot_guidance": {
     "kind": "from",
     "time": "14:30"
@@ -27,6 +27,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 16, 00:49",
+  "updated_at": "Nov 16, 12:49",
   "source": "calendar"
 }
