@@ -6,8 +6,8 @@ import { dotSpeech } from './e1002-dot-speech.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const [mode, output] = process.argv.slice(2);
-if (!['morning', 'evening'].includes(mode) || !output) {
-  throw new Error('Usage: node deploy/render-e1002.mjs morning|evening output.png');
+if (!['morning', 'evening', 'forecast-morning'].includes(mode) || !output) {
+  throw new Error('Usage: node deploy/render-e1002.mjs morning|evening|forecast-morning output.png');
 }
 
 const source = new URL(process.env.E1002_PAGE || 'https://chungmaruq.github.io/sensecraft/office-hours-live.html');
@@ -22,8 +22,10 @@ const evening = {
 };
 let status = evening;
 let forecastKind;
-if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_TOMORROW_URL)) {
+if (mode === 'forecast-morning' ||
+    (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_TOMORROW_URL))) {
   const snapshot = process.env.E1002_TOMORROW_FILE;
+  if (mode === 'forecast-morning' && !snapshot) throw new Error('Morning forecast requires a dated snapshot');
   let forecast;
   if (snapshot) {
     forecast = JSON.parse(await readFile(snapshot, 'utf8'));
@@ -32,11 +34,12 @@ if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_
     if (!response.ok) throw new Error(`Tomorrow feed HTTP ${response.status}`);
     forecast = await response.json();
   }
-  const imageDate = snapshot && output.match(/(\d{4}-\d{2}-\d{2})-evening\.png$/);
-  if (snapshot && !imageDate) throw new Error('Expected a dated evening image filename');
+  const morningForecast = mode === 'forecast-morning';
+  const imageDate = snapshot && output.match(morningForecast ? /(\d{4}-\d{2}-\d{2})\.png$/ : /(\d{4}-\d{2}-\d{2})-evening\.png$/);
+  if (snapshot && !imageDate) throw new Error('Expected a dated image filename');
   const day = imageDate ? Date.parse(imageDate[1] + 'T00:00:00+09:00') : Date.now();
   const tomorrow = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' })
-    .format(new Date(day + 86400000));
+    .format(new Date(day + (morningForecast ? 0 : 86400000)));
   if (forecast.date !== tomorrow) throw new Error('Tomorrow forecast is missing or stale');
   forecastKind = forecast.kind;
   status = { ...evening, detail: ({
@@ -65,11 +68,34 @@ if (mode === 'evening' && (process.env.E1002_TOMORROW_FILE || process.env.E1002_
     if (typeof forecast.visit_after === 'string' && new RegExp('^' + time + '$').test(forecast.visit_after)) {
       status.next_label = 'TOMORROW';
       status.next_available = forecast.visit_after;
+      if (morningForecast) status.dot_guidance = { kind: 'from', time: forecast.visit_after };
     } else if (typeof forecast.visit_before === 'string' && new RegExp('^' + time + '$').test(forecast.visit_before)) {
       status.next_label = 'TOMORROW UNTIL';
       status.next_available = forecast.visit_before;
       status.dot_guidance = { kind: 'before', time: forecast.visit_before };
     }
+  }
+  if (morningForecast) {
+    const variants = {
+      office: ['available', 'CAMPUS DAY', 'Office Hours', '정규 방문 시간에 방문해 주세요.', '정규 방문 가능'],
+      scheduled: ['lunch', 'SCHEDULED', 'Limited Today', '아래 일정과 방문 가능 시간을 확인해 주세요.', '오늘은 일정이 있어요.'],
+      away: ['away', 'OFF CAMPUS', 'Out Today', '오늘은 외부 일정으로 자리를 비웁니다.', evening.up_next_1_title],
+      closed: ['setup', 'NO HOURS', 'No Office Hours', '평일에 다시 방문해 주세요.', '오늘 방문 일정 없음']
+    };
+    if (!Object.hasOwn(variants, forecastKind)) throw new Error('No reliable morning forecast');
+    const [state, status_label, headline, detail, planTitle] = variants[forecastKind];
+    const date = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Seoul', weekday: 'short', month: 'short', day: 'numeric'
+    }).format(new Date(day));
+    status = {
+      ...status, date, state, status_label, headline, detail,
+      todays_hours: forecastKind === 'closed' ? '' : evening.todays_hours,
+      plan_label: forecastKind === 'away' ? 'URGENT MATTERS' : "Today's Plan",
+      up_next_1_title: status.up_next_1_time ? status.up_next_1_title : planTitle,
+      next_label: forecastKind === 'office' ? 'VISIT WINDOW' :
+        status.dot_guidance?.kind === 'before' ? 'AVAILABLE UNTIL' : 'BEST AFTER',
+      next_available: forecastKind === 'office' ? evening.todays_hours : status.next_available || ''
+    };
   }
 }
 if (mode === 'morning') {

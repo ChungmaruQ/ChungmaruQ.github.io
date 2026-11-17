@@ -54,3 +54,8 @@ jobs:
           file="dist/$evening-evening.png"
           node deploy/render-e1002.mjs evening "$file"
           bash deploy/publish-e1002-image.sh "$file"
+          if [[ "$forecast" > "$(TZ=Asia/Seoul date +%F)" ]] && [[ "$(jq -r .kind "$E1002_TOMORROW_FILE")" != unknown ]]; then
+            file="dist/$forecast.png"
+            node deploy/render-e1002.mjs forecast-morning "$file"
+            bash deploy/publish-e1002-image.sh "$file"
+          fi
