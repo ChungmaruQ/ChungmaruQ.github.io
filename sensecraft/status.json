@@ -1,7 +1,7 @@
 {
   "mode": "daily",
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Thu, Nov 19",
+  "date": "Fri, Nov 20",
   "state": "away",
   "status_label": "OFF CAMPUS",
   "headline": "Out Today",
@@ -24,13 +24,14 @@
       "2026-11-20"
     ],
     "checked_dates": [
-      "2026-11-16",
       "2026-11-17",
-      "2026-11-18",
       "2026-11-19",
       "2026-11-20"
     ],
-    "unknown_dates": []
+    "unknown_dates": [
+      "2026-11-16",
+      "2026-11-18"
+    ]
   },
   "battery_level": "",
   "plan_label": "URGENT MATTERS",
@@ -43,6 +44,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 19, 18:49",
+  "updated_at": "Nov 20, 00:50",
   "source": "calendar"
 }
