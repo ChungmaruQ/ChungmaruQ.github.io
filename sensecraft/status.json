@@ -1,17 +1,17 @@
 {
   "mode": "daily",
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Fri, Nov 20",
-  "state": "away",
-  "status_label": "OFF CAMPUS",
-  "headline": "Out Today",
-  "detail": "Not on campus today.",
-  "dot_hint": "away",
+  "date": "Sat, Nov 21",
+  "state": "setup",
+  "status_label": "NO HOURS",
+  "headline": "No Office Hours",
+  "detail": "Weekend or holiday schedule.",
+  "dot_hint": "closed",
   "dot_guidance": null,
   "next_label": "NEXT OFFICE DAY",
   "next_available": "Nov 23\n09:30",
   "current_until": "",
-  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "todays_hours": "No hours today",
   "away_days": [
     "thu",
     "fri"
@@ -24,25 +24,26 @@
       "2026-11-20"
     ],
     "checked_dates": [
-      "2026-11-16",
       "2026-11-17",
       "2026-11-18",
       "2026-11-19",
       "2026-11-20"
     ],
-    "unknown_dates": []
+    "unknown_dates": [
+      "2026-11-16"
+    ]
   },
   "battery_level": "",
-  "plan_label": "URGENT MATTERS",
+  "plan_label": "Today's Plan",
   "up_next_1_time": "",
-  "up_next_1_title": "Please visit Room 534\n(생약학 연구실)",
-  "up_next_1_type": "away",
+  "up_next_1_title": "Office closed today",
+  "up_next_1_type": "closed",
   "up_next_2_time": "",
   "up_next_2_title": "",
   "up_next_2_type": "",
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 20, 06:49",
+  "updated_at": "Nov 21, 00:49",
   "source": "calendar"
 }
