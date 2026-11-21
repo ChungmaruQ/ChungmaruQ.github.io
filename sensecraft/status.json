@@ -1,7 +1,7 @@
 {
   "mode": "daily",
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Sat, Nov 21",
+  "date": "Sun, Nov 22",
   "state": "setup",
   "status_label": "NO HOURS",
   "headline": "No Office Hours",
@@ -9,7 +9,7 @@
   "dot_hint": "closed",
   "dot_guidance": null,
   "next_label": "NEXT OFFICE DAY",
-  "next_available": "Nov 23\n09:30",
+  "next_available": "Tomorrow\n09:30",
   "current_until": "",
   "todays_hours": "No hours today",
   "away_days": [
@@ -24,12 +24,12 @@
       "2026-11-20"
     ],
     "checked_dates": [
-      "2026-11-16",
       "2026-11-17",
       "2026-11-19",
       "2026-11-20"
     ],
     "unknown_dates": [
+      "2026-11-16",
       "2026-11-18"
     ]
   },
@@ -44,6 +44,6 @@
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 21, 12:49",
+  "updated_at": "Nov 22, 00:49",
   "source": "calendar"
 }
