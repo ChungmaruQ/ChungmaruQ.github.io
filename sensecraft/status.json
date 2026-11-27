@@ -1,20 +1,17 @@
 {
   "mode": "daily",
   "display_name": "Prof. Hyunwoo Kim",
-  "date": "Fri, Nov 27",
-  "state": "lunch",
-  "status_label": "SCHEDULED",
-  "headline": "Limited Today",
-  "detail": "일정이 끝난 뒤 다시 방문해 주세요.",
-  "dot_hint": "busy",
-  "dot_guidance": {
-    "kind": "before",
-    "time": "16:00"
-  },
-  "next_label": "AVAILABLE UNTIL",
-  "next_available": "16:00",
+  "date": "Sat, Nov 28",
+  "state": "setup",
+  "status_label": "NO HOURS",
+  "headline": "No Office Hours",
+  "detail": "Weekend or holiday schedule.",
+  "dot_hint": "closed",
+  "dot_guidance": null,
+  "next_label": "NEXT OFFICE DAY",
+  "next_available": "Nov 30\n09:30",
   "current_until": "",
-  "todays_hours": "09:30-12:00 / 13:00-18:00",
+  "todays_hours": "No hours today",
   "away_days": [],
   "away_calendar": {
     "week_start": "2026-11-23",
@@ -24,22 +21,23 @@
       "2026-11-23",
       "2026-11-24",
       "2026-11-25",
-      "2026-11-26",
-      "2026-11-27"
+      "2026-11-26"
     ],
-    "unknown_dates": []
+    "unknown_dates": [
+      "2026-11-27"
+    ]
   },
   "battery_level": "",
   "plan_label": "Today's Plan",
-  "up_next_1_time": "16:00-17:00",
-  "up_next_1_title": "Meeting",
-  "up_next_1_type": "meeting",
-  "up_next_2_time": "17:00-18:00",
-  "up_next_2_title": "Busy",
-  "up_next_2_type": "busy",
+  "up_next_1_time": "",
+  "up_next_1_title": "Office closed today",
+  "up_next_1_type": "closed",
+  "up_next_2_time": "",
+  "up_next_2_title": "",
+  "up_next_2_type": "",
   "up_next_3_time": "",
   "up_next_3_title": "",
   "up_next_3_type": "",
-  "updated_at": "Nov 27, 18:49",
+  "updated_at": "Nov 28, 00:49",
   "source": "calendar"
 }
